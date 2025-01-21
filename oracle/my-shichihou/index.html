@@ -2,31 +2,21 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>七宝占術 ドット風 | トップ</title>
-  
-  <!-- ファビコンの指定 -->
-  <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon" />
-
-  <!-- ピクセルフォント: Press Start 2P を導入 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-
-  <!-- レスポンシブ指定 -->
+  <title>七宝占術 公式サイト | トップ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <!-- ドット絵スタイルシート（新しいCSSファイル） -->
-  <link rel="stylesheet" href="assets/css/style-dot.css" />
+  <!-- 共通CSSを読み込み -->
+  <link rel="stylesheet" href="assets/css/style.css" />
 </head>
-<body class="dot-bg">
+<body>
   <!-- ヘッダー -->
-  <header class="site-header pixel-font">
+  <header class="site-header">
     <div class="header-inner">
+      <!-- ロゴアイコン（仮） -->
       <a href="index.html" class="site-logo">
-        <!-- ここでドット絵風のロゴ画像を使うなら変更 -->
         <img src="assets/images/icon.png" alt="七宝占術ロゴ" class="logo-img" />
         <span class="site-title">七宝占術</span>
       </a>
+      <!-- ナビゲーション -->
       <nav class="main-nav">
         <ul>
           <li><a href="index.html" class="active">TOP</a></li>
@@ -38,31 +28,27 @@
     </div>
   </header>
 
-  <!-- メインビジュアル（ドット風の背景画像を使うなど） -->
-  <div class="main-visual" style="background-image: url('assets/images/header-dot.png');">
+  <!-- メインビジュアル -->
+  <div class="main-visual" style="background-image: url('assets/images/header.jpg');">
     <div class="visual-overlay">
-      <h1 class="pixel-font">
-        7つの宝石が導く運命<br>ドットの世界へ
-      </h1>
-      <a href="#diagnosis" class="cta-button blink-anim pixel-font">
-        無料診断へ
-      </a>
+      <h1>7つの宝石が導く運命<br>七宝占術の世界へ</h1>
+      <a href="#diagnosis" class="cta-button">無料診断へ</a>
     </div>
   </div>
 
   <!-- サイト概要や紹介セクション -->
-  <section class="section intro-section pixel-font">
+  <section class="section intro-section">
     <div class="container">
       <h2>ようこそ、七宝占術の公式サイトへ</h2>
       <p>
         「七宝占術」は、7つの宝石のエネルギーから人生の指針を読み解くオリジナル占術です。<br>
-        ドット絵の世界で、あなたの宝石タイプやライフパスナンバーを探ってみましょう！
+        木々の声、星々の導き、そして人々の想いが交わるこの世界で、あなた自身の運命を見つけ出しませんか？
       </p>
     </div>
   </section>
 
   <!-- 無料診断セクション -->
-  <section id="diagnosis" class="section diagnosis-section pixel-font">
+  <section id="diagnosis" class="section diagnosis-section">
     <div class="container">
       <h2>無料簡易診断</h2>
       <form id="fortuneForm">
@@ -72,31 +58,32 @@
         <label for="userName">お名前（ローマ字）:</label>
         <input type="text" id="userName" name="userName" required placeholder="TANAKA YUYA" />
 
-        <button type="submit" class="cta-button">診断する</button>
+        <button type="submit">診断する</button>
       </form>
       <div id="diagnosisResult" class="diagnosis-result"></div>
     </div>
   </section>
 
   <!-- 有料サービスへの導線 -->
-  <section class="section cta-service pixel-font">
+  <section class="section cta-service">
     <div class="container">
       <h2>もっと詳しく知りたい方へ</h2>
-      <p>
-        年間運勢レポートや個別鑑定で、あなたの運命をより深く掘り下げます。<br>
-        恋愛・結婚、仕事、人生の節目に、七宝占術が寄り添います。
-      </p>
+      <p>年間運勢レポートや個別鑑定で、あなたの運命をより深く掘り下げます。<br>
+        恋愛・結婚、仕事、人生の節目に、七宝占術が寄り添います。</p>
       <a href="service.html" class="cta-button">サービスを見る</a>
     </div>
   </section>
 
   <!-- フッター -->
-  <footer class="site-footer pixel-font">
+  <footer class="site-footer">
     <div class="footer-inner">
-      <p>&copy; 2025 七宝占術. All Rights Reserved.</p>
+      <p class="copyright">
+        &copy; 2024 七宝占術. All Rights Reserved.
+      </p>
     </div>
   </footer>
 
+  <!-- JavaScript -->
   <script src="assets/js/main.js"></script>
 </body>
 </html>
