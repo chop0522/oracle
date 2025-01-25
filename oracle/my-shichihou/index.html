@@ -68,18 +68,60 @@
   <section class="section cta-service">
     <div class="container">
       <h2>もっと詳しく知りたい方へ</h2>
-      <p>年間運勢レポートや個別鑑定で、あなたの運命をより深く掘り下げます。<br>
-        恋愛・結婚、仕事、人生の節目に、七宝占術が寄り添います。</p>
+      <p>
+        年間運勢レポートや個別鑑定で、あなたの運命をより深く掘り下げます。<br>
+        恋愛・結婚、仕事、人生の節目に、七宝占術が寄り添います。
+      </p>
       <a href="service.html" class="cta-button">サービスを見る</a>
     </div>
   </section>
 
+  <!-- ▼ ここから追加: ログインフォーム & サブスクフォーム -->
+  <section class="section" id="login-section">
+    <div class="container">
+      <h2>ログイン</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="loginEmail">メールアドレス:</label>
+          <input type="email" id="loginEmail" name="loginEmail" required placeholder="test@example.com">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">パスワード:</label>
+          <input type="password" id="loginPassword" name="loginPassword" required>
+        </div>
+        <button type="submit">ログイン</button>
+      </form>
+      <!-- 成功/エラー表示用 -->
+      <div id="loginResult"></div>
+    </div>
+  </section>
+
+  <section class="section" id="subscribe-section">
+    <div class="container">
+      <h2>有料サブスク登録</h2>
+      <form id="subscribeForm">
+        <div class="form-group">
+          <label for="plan">プラン:</label>
+          <select id="plan" name="plan" required>
+            <option value="monthly">月額プラン</option>
+            <option value="annual">年額プラン</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="price">料金:</label>
+          <input type="number" id="price" name="price" value="500" required>
+        </div>
+        <button type="submit">サブスク申し込み</button>
+      </form>
+      <div id="subscribeResult"></div>
+    </div>
+  </section>
+  <!-- ▲ ここまで追加 -->
+
   <!-- フッター -->
   <footer class="site-footer">
     <div class="footer-inner">
-      <p class="copyright">
-        &copy; 2024 七宝占術. All Rights Reserved.
-      </p>
+      <p>&copy; 2024 七宝占術. All Rights Reserved.</p>
     </div>
   </footer>
 

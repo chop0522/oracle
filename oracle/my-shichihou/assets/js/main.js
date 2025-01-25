@@ -1,27 +1,40 @@
+/***************************************************
+ * assets/js/main.js
+ * 
+ * 1) DOMContentLoaded後にフォームイベントを設定
+ * 2) fortuneForm（無料簡易診断）
+ * 3) loginForm（ログイン → JWTトークン取得）
+ * 4) subscribeForm（サブスク申し込み → token送信）
+ ***************************************************/
+
+// DOM読み込み完了時に一度だけ実行
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('fortuneForm');
-    const resultDiv = document.getElementById('diagnosisResult');
-  
-    if (!form || !resultDiv) return;
-  
-    form.addEventListener('submit', (e) => {
+
+  /*****************************************
+   * 1) 無料簡易診断フォーム (fortuneForm)
+   *****************************************/
+  const fortuneForm = document.getElementById('fortuneForm');
+  const resultDiv = document.getElementById('diagnosisResult');
+
+  if (fortuneForm && resultDiv) {
+    fortuneForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      // 入力値の取得
-      const birthDateValue = document.getElementById('birthDate').value; // 例: 1988-05-22
-      const userName = document.getElementById('userName').value.trim(); // 例: TANAKA YUYA
-  
+      // 入力値
+      const birthDateValue = document.getElementById('birthDate').value; // 例: "1988-05-22"
+      const userName = document.getElementById('userName').value.trim(); // 例: "TANAKA YUYA"
+
       if (!birthDateValue || !userName) {
         resultDiv.textContent = '生年月日と名前を正しく入力してください。';
         return;
       }
-  
-      // 生年月日からの算出
+
+      // 1) 生年月日から算出
       const { gemType, lifePath } = calcBirthData(birthDateValue);
-  
-      // 名前からの算出
+
+      // 2) 名前から算出
       const { soulNumber, expressionNumber } = calcNameData(userName);
-  
-      // 結果の組み立て
+
+      // 3) 結果をHTML化
       const html = `
         <h3>占い結果</h3>
         <p><strong>宝石タイプ</strong>: ${gemType}</p>
@@ -37,94 +50,178 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       resultDiv.innerHTML = html;
     });
-  });
-  
-  /**
-   * 生年月日から宝石タイプとライフパスナンバーを計算
-   */
-  function calcBirthData(birthDateStr) {
-    // birthDateStr例: "1988-05-22"
-    const [year, month, day] = birthDateStr.split('-');
-    // 各桁を配列化
-    const digits = [...year, ...month, ...day].map(Number); 
-    const sum = digits.reduce((a, b) => a + b, 0);
-  
-    // 1) 宝石タイプ
-    //    a) 一桁になるまで足す
-    let gemNum = reduceToSingle(sum);
-    //    b) 7を超えたら7を引く
-    if (gemNum > 7) gemNum -= 7;
-    const gemType = getGemType(gemNum);
-  
-    // 2) ライフパスナンバー: 7で引く操作はしない
-    const lifePath = reduceToSingle(sum);
-  
-    return { gemType, lifePath };
   }
-  
-  /**
-   * 一桁になるまで足し続ける（数秘術でよく使う処理）
-   */
-  function reduceToSingle(num) {
-    let result = num;
-    while (result > 9) {
-      const arr = String(result).split('').map(Number);
-      result = arr.reduce((a, b) => a + b, 0);
-    }
-    return result;
-  }
-  
-  /**
-   * 宝石タイプ番号 -> 具体的な宝石名
-   */
-  function getGemType(num) {
-    switch(num) {
-      case 1: return 'ダイヤモンド（火のエレメント）';
-      case 2: return 'ルビー（火のエレメント）';
-      case 3: return 'サファイア（水のエレメント）';
-      case 4: return 'エメラルド（風のエレメント）';
-      case 5: return 'アメジスト（土のエレメント）';
-      case 6: return 'トパーズ（風のエレメント）';
-      case 7: return 'オパール（土のエレメント）';
-      default: return '不明';
-    }
-  }
-  
-  /**
-   * 名前（ローマ字）からソウルナンバー（母音合計）＆表現数（子音合計）を算出
-   */
-  function calcNameData(nameStr) {
-    // 大文字に揃える & スペース削除
-    const upperName = nameStr.toUpperCase().replace(/\s+/g, '');
-  
-    // アルファベット→数字の対応表
-    const charToNum = {
-      A:1, J:1, S:1,
-      B:2, K:2, T:2,
-      C:3, L:3, U:3,
-      D:4, M:4, V:4,
-      E:5, N:5, W:5,
-      F:6, O:6, X:6,
-      G:7, P:7, Y:7,
-      H:8, Q:8, Z:8,
-      I:9, R:9
-    };
-  
-    const vowels = ['A','E','I','O','U']; 
-    let sumVowels = 0;
-    let sumConsonants = 0;
-  
-    for (const ch of upperName) {
-      if (!charToNum[ch]) continue; 
-      if (vowels.includes(ch)) {
-        sumVowels += charToNum[ch];
-      } else {
-        sumConsonants += charToNum[ch];
+
+  /*****************************************
+   * 2) ログインフォーム (loginForm)
+   *****************************************/
+  const loginForm = document.getElementById('loginForm');
+  const loginResultDiv = document.getElementById('loginResult');
+
+  if (loginForm && loginResultDiv) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        loginResultDiv.textContent = 'メールアドレスとパスワードを入力してください。';
+        return;
       }
-    }
-  
-    const soulNumber = reduceToSingle(sumVowels);
-    const expressionNumber = reduceToSingle(sumConsonants);
-  
-    return { soulNumber, expressionNumber };
+
+      try {
+        const res = await fetch('http://localhost:3000/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          // 成功: トークンを localStorage に保存
+          localStorage.setItem('token', data.token);
+          loginResultDiv.textContent = 'ログイン成功！トークンを保存しました。';
+        } else {
+          // 失敗: エラーメッセージ
+          loginResultDiv.textContent = 'ログイン失敗: ' + (data.error || '不明なエラー');
+        }
+      } catch (err) {
+        console.error(err);
+        loginResultDiv.textContent = '通信エラーが発生しました。';
+      }
+    });
   }
+
+  /*****************************************
+   * 3) サブスク申し込みフォーム (subscribeForm)
+   *****************************************/
+  const subscribeForm = document.getElementById('subscribeForm');
+  const subscribeResultDiv = document.getElementById('subscribeResult');
+
+  if (subscribeForm && subscribeResultDiv) {
+    subscribeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const plan = document.getElementById('plan').value;  // monthly / annual
+      const price = parseInt(document.getElementById('price').value, 10);
+
+      // ローカルストレージからトークンを取得
+      const token = localStorage.getItem('token');
+      if (!token) {
+        subscribeResultDiv.textContent = 'トークンがありません。先にログインしてください。';
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:3000/api/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ plan, price })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          subscribeResultDiv.textContent = 
+            `サブスク登録成功！ subscription_id=${data.subscription_id}, message=${data.message}`;
+        } else {
+          subscribeResultDiv.textContent = 
+            'サブスク登録失敗: ' + (data.error || '不明なエラー');
+        }
+      } catch (err) {
+        console.error(err);
+        subscribeResultDiv.textContent = '通信エラーが発生しました。';
+      }
+    });
+  }
+
+});
+
+/***************************************************
+ * 以下: 占い計算ロジック
+ * (calcBirthData / calcNameData / reduceToSingle / getGemType)
+ ***************************************************/
+
+/**
+ * 生年月日から宝石タイプとライフパスナンバーを計算
+ */
+function calcBirthData(birthDateStr) {
+  // 例: "1988-05-22"
+  const [year, month, day] = birthDateStr.split('-');
+  // 各桁を配列化
+  const digits = [...year, ...month, ...day].map(Number); 
+  const sum = digits.reduce((a, b) => a + b, 0);
+
+  // 1) 宝石タイプ
+  let gemNum = reduceToSingle(sum);
+  if (gemNum > 7) gemNum -= 7;
+  const gemType = getGemType(gemNum);
+
+  // 2) ライフパスナンバー (7を引かない)
+  const lifePath = reduceToSingle(sum);
+
+  return { gemType, lifePath };
+}
+
+/**
+ * 一桁になるまで足し続ける数秘術的処理
+ */
+function reduceToSingle(num) {
+  let result = num;
+  while (result > 9) {
+    const arr = String(result).split('').map(Number);
+    result = arr.reduce((a, b) => a + b, 0);
+  }
+  return result;
+}
+
+/**
+ * 宝石タイプ番号 -> 宝石名
+ */
+function getGemType(num) {
+  switch(num) {
+    case 1: return 'ダイヤモンド（火のエレメント）';
+    case 2: return 'ルビー（火のエレメント）';
+    case 3: return 'サファイア（水のエレメント）';
+    case 4: return 'エメラルド（風のエレメント）';
+    case 5: return 'アメジスト（土のエレメント）';
+    case 6: return 'トパーズ（風のエレメント）';
+    case 7: return 'オパール（土のエレメント）';
+    default: return '不明';
+  }
+}
+
+/**
+ * 名前からソウルナンバー＆表現数を算出
+ */
+function calcNameData(nameStr) {
+  const upperName = nameStr.toUpperCase().replace(/\s+/g, '');
+  const charToNum = {
+    A:1, J:1, S:1,
+    B:2, K:2, T:2,
+    C:3, L:3, U:3,
+    D:4, M:4, V:4,
+    E:5, N:5, W:5,
+    F:6, O:6, X:6,
+    G:7, P:7, Y:7,
+    H:8, Q:8, Z:8,
+    I:9, R:9
+  };
+
+  const vowels = ['A','E','I','O','U']; 
+  let sumVowels = 0;
+  let sumConsonants = 0;
+
+  for (const ch of upperName) {
+    if (!charToNum[ch]) continue;
+    if (vowels.includes(ch)) {
+      sumVowels += charToNum[ch];
+    } else {
+      sumConsonants += charToNum[ch];
+    }
+  }
+
+  const soulNumber = reduceToSingle(sumVowels);
+  const expressionNumber = reduceToSingle(sumConsonants);
+
+  return { soulNumber, expressionNumber };
+}
