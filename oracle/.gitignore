@@ -1,0 +1,22 @@
+# macOSのシステムファイル
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node.jsの依存関係
+node_modules/
+
+# 環境変数ファイル
+.env
+
+# ログファイル
+*.log
+
+# IDEやエディタの設定ファイル
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# その他
+.Trash/
