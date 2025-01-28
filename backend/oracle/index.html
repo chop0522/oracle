@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>七宝占術 公式サイト</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- CSSを外部ファイルに分ける場合は<link>タグを使用 -->
+  <style>
+    /* 簡易的なスタイル設定 (本番ではCSSファイルを分けることを推奨) */
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: #111; /* 背景をダークトーンに */
+      color: #fff;           /* 文字を白に */
+    }
+    header {
+      background-color: #222;
+      padding: 1rem;
+    }
+    header .site-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin: 0;
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 1rem;
+      margin: 0;
+      padding: 0;
+    }
+    nav li a {
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .main-visual {
+      text-align: center;
+      padding: 2rem;
+      background: url('images/header_image.jpg') no-repeat center/cover;
+      /* ↑お好きなヘッダー画像を差し込んでください */
+    }
+    .main-visual h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    }
+    .main-visual .cta-button {
+      display: inline-block;
+      padding: 0.8rem 1.5rem;
+      background: #663399;
+      border-radius: 4px;
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+
+    .section {
+      padding: 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #444;
+      padding-bottom: 0.5rem;
+    }
+    .section p {
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .diagnosis-section {
+      background-color: #222;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    .diagnosis-section label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .diagnosis-section input {
+      margin-bottom: 1rem;
+      width: 100%;
+      padding: 0.5rem;
+      box-sizing: border-box;
+      border: 1px solid #555;
+      border-radius: 4px;
+      background: #333;
+      color: #fff;
+    }
+    .diagnosis-section button {
+      background: #28a745;
+      color: #fff;
+      border: none;
+      padding: 0.8rem 1.2rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .diagnosis-section button:hover {
+      background: #218838;
+    }
+
+    footer {
+      background-color: #222;
+      text-align: center;
+      padding: 1rem;
+      margin-top: 2rem;
+    }
+    footer p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ヘッダー -->
+  <header>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1 class="site-title">七宝占術</h1>
+      <nav>
+        <ul>
+          <li><a href="#">無料診断</a></li>
+          <li><a href="#">宝石タイプ一覧</a></li>
+          <li><a href="#">有料サービス</a></li>
+          <li><a href="#">ブログ</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- メインビジュアル -->
+  <div class="main-visual">
+    <h1>7つの宝石が導く運命<br>七宝占術の世界へ</h1>
+    <a href="#diagnosis" class="cta-button">無料診断へ</a>
+  </div>
+
+  <!-- コンテンツセクション -->
+  <section class="section">
+    <h2>七宝占術とは？</h2>
+    <p>
+      「七宝占術」は、7つの宝石に秘められたエネルギーをもとに、人間の運命や性格・相性を占うオリジナルの占術です。<br>
+      各宝石が象徴するテーマやエレメントを組み合わせることで、人生の指針を見出すことができます。
+    </p>
+    <p>
+      宝石タイプにはそれぞれ「ダイヤモンド」「ルビー」「サファイア」...などがあり、持ち主の性格や運勢を示唆します。
+      自分自身や周りの人を診断して、新たな一面を発見してみましょう。
+    </p>
+  </section>
+
+  <!-- 無料診断セクション -->
+  <section id="diagnosis" class="section diagnosis-section">
+    <h2>無料簡易診断</h2>
+    <form id="fortuneForm">
+      <label for="birthDate">生年月日:</label>
+      <input type="date" id="birthDate" name="birthDate" required />
+
+      <label for="userName">お名前（ローマ字）:</label>
+      <input type="text" id="userName" name="userName" required placeholder="TANAKA YUYA" />
+
+      <button type="submit">診断する</button>
+    </form>
+    <div id="diagnosisResult" style="margin-top:1rem;"></div>
+  </section>
+
+  <!-- 有料サービス紹介 -->
+  <section class="section">
+    <h2>有料サービス</h2>
+    <p>詳細レポートや個別鑑定を通して、あなたの人生をさらに深く読み解きます。<br>
+       「年間運勢レポート」「恋愛・結婚相談」「ビジネスアドバイス」など多彩なメニューをご用意。</p>
+    <p><a href="#" style="color: #66c0f4; text-decoration: underline;">詳しくはこちら</a></p>
+  </section>
+
+  <!-- フッター -->
+  <footer>
+    <p>© 2024 七宝占術. All Rights Reserved.</p>
+  </footer>
+
+  <!-- JSスクリプト（簡易占いロジック例） -->
+  <script>
+    const form = document.getElementById("fortuneForm");
+    const resultDiv = document.getElementById("diagnosisResult");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const birthDateValue = document.getElementById("birthDate").value;
+      const userName = document.getElementById("userName").value;
+
+      if (!birthDateValue || !userName) {
+        resultDiv.textContent = "入力情報が不足しています。";
+        return;
+      }
+
+      // 占いロジックの例：生まれた月の数値で宝石タイプを判定（超簡易サンプル）
+      const birthMonth = new Date(birthDateValue).getMonth() + 1;
+
+      let gemType = "";
+      switch (birthMonth) {
+        case 1: gemType = "ダイヤモンド（火のエレメント）"; break;
+        case 2: gemType = "ルビー（火のエレメント）"; break;
+        case 3: gemType = "サファイア（水のエレメント）"; break;
+        case 4: gemType = "エメラルド（風のエレメント）"; break;
+        case 5: gemType = "アメジスト（土のエレメント）"; break;
+        case 6: gemType = "トパーズ（風のエレメント）"; break;
+        case 7: gemType = "オパール（土のエレメント）"; break;
+        case 8: gemType = "ダイヤモンド（火のエレメント）"; break;
+        case 9: gemType = "ルビー（火のエレメント）"; break;
+        case 10: gemType = "サファイア（水のエレメント）"; break;
+        case 11: gemType = "エメラルド（風のエレメント）"; break;
+        case 12: gemType = "アメジスト（土のエレメント）"; break;
+        default: gemType = "不明";
+      }
+
+      const message = `
+        ${userName}さんの宝石タイプは「${gemType}」です。<br>
+        より詳しい運勢や相性は有料レポートでチェックしてみてください。
+      `;
+      resultDiv.innerHTML = message;
+    });
+  </script>
+</body>
+</html>
