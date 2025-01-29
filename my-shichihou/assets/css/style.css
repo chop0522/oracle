@@ -1,0 +1,223 @@
+/* ===============================
+   BASE / RESET
+=============================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ドットフォントの全体適用（Press Start 2P） */
+body {
+  background-color: #000; /* 黒をベース */
+  color: #fff; 
+  line-height: 1.4;
+  font-size: 14px; /* ドットフォントなので小さめでも十分 */
+}
+
+/* ===============================
+   DOT BACKGROUND
+=============================== */
+.dot-bg {
+  /* 小さなドット画像を繰り返し or base64 etc. */
+  /* 例: url("assets/images/dot-background.png") repeat */
+  background: url("assets/images/dot-bg.png") repeat;
+  background-color: #000;
+}
+
+/* レトロゲーム感を高めるならフォントを全体に適用 */
+.pixel-font {
+  font-family: 'Press Start 2P', cursive;
+}
+
+/* ===============================
+   HEADER / NAV
+=============================== */
+.site-header {
+  background-color: #111;
+  border-bottom: 2px solid #444;
+}
+.header-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.site-logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+.logo-img {
+  width: 48px; 
+  height: 48px;
+  margin-right: 8px;
+}
+.site-title {
+  font-size: 16px;
+  color: #fff;
+}
+.main-nav ul {
+  list-style: none;
+  display: flex;
+  gap: 16px;
+}
+.main-nav li a {
+  color: #ff66cc; /* レトロカラー例 */
+  text-decoration: none;
+  padding: 4px 8px;
+}
+.main-nav li a.active,
+.main-nav li a:hover {
+  background-color: #222;
+}
+
+/* ===============================
+   MAIN VISUAL
+=============================== */
+.main-visual {
+  position: relative;
+  width: 100%;
+  height: 50vh;
+  background-position: center;
+  background-size: cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.visual-overlay {
+  background-color: rgba(0,0,0,0.8);
+  padding: 16px;
+  border: 2px solid #fff;
+  text-align: center;
+}
+.main-visual h1 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+/* 点滅アニメ */
+.blink-anim {
+  animation: blink 1s step-start infinite alternate;
+}
+@keyframes blink {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ===============================
+   CTA BUTTON
+=============================== */
+.cta-button {
+  display: inline-block;
+  padding: 8px 16px;
+  border: 2px solid #fff;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  margin-top: 8px;
+  box-shadow: inset 0 0 0 2px #000;
+}
+.cta-button:hover {
+  background: #333;
+}
+
+/* ===============================
+   SECTION / CONTAINER
+=============================== */
+.section {
+  padding: 16px;
+}
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.intro-section h2,
+.intro-section p {
+  margin-top: 8px;
+}
+
+/* ===============================
+   DIAGNOSIS SECTION
+=============================== */
+.diagnosis-section {
+  background-color: #111;
+  margin-top: 16px;
+  border: 2px solid #444;
+  border-radius: 0; /* レトロ感で丸角なし */
+}
+.diagnosis-section form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+.diagnosis-section label {
+  font-size: 12px;
+}
+.diagnosis-section input {
+  padding: 4px;
+  border: 2px solid #fff;
+  background: #000;
+  color: #fff;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+}
+.diagnosis-result {
+  padding: 16px;
+  font-size: 12px;
+}
+
+/* 伏字 or blur for partially locked content */
+.locked-content {
+  filter: blur(4px);
+  position: relative;
+}
+.locked-content::after {
+  content: "有料版で解除";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #f00;
+  color: #fff;
+  padding: 4px;
+  font-size: 10px;
+  pointer-events: none;
+}
+
+/* ===============================
+   CTA SERVICE
+=============================== */
+.cta-service {
+  background-color: #111;
+  border: 2px solid #444;
+  margin-top: 16px;
+  padding: 16px;
+}
+.cta-service h2 {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.cta-service p {
+  margin-bottom: 8px;
+}
+
+/* ===============================
+   FOOTER
+=============================== */
+.site-footer {
+  background-color: #111;
+  border-top: 2px solid #444;
+  text-align: center;
+  padding: 8px;
+  margin-top: 16px;
+}
+.footer-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  font-size: 10px;
+  color: #999;
+}
