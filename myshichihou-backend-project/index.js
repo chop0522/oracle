@@ -1,5 +1,5 @@
 /*******************************************
- * index.js (省略なし・完全版)
+ * index.js (本番向け・SSL修正済み)
  *******************************************/
 
 require('dotenv').config();
@@ -13,9 +13,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// DB接続
+// ★ DB接続 - SSL対応
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 /*******************************************
@@ -32,17 +35,16 @@ function authenticateToken(req, res, next) {
     if (err) {
       return res.status(403).json({ error: 'Invalid token' });
     }
-    // { user_id, email, iat, exp }
-    req.user = decoded;
+    req.user = decoded; // { user_id, email, iat, exp }
     next();
   });
 }
 
 /*******************************************
- * 動作確認用
+ * 動作確認 (GET /)
  *******************************************/
 app.get('/', (req, res) => {
-  res.send('Hello from Node.js + DB!');
+  res.send('Hello from Node.js + DB (SSL)!');
 });
 
 /*******************************************
@@ -127,7 +129,6 @@ app.post('/api/login', async (req, res) => {
 // サブスク登録
 app.post('/api/subscribe', authenticateToken, async (req, res) => {
   try {
-    // JWTデコード結果: req.user = { user_id, email, iat, exp }
     const userId = req.user.user_id;
     const { plan, price } = req.body;
 
@@ -148,14 +149,13 @@ app.post('/api/subscribe', authenticateToken, async (req, res) => {
 });
 
 /*******************************************
- * 宝石タイプAPI
+ * 宝石タイプAPI (gem_types)
  *******************************************/
 
 // 全取得
 app.get('/api/gems', async (req, res) => {
   try {
-    const sql = 'SELECT * FROM gem_types';
-    const result = await pool.query(sql);
+    const result = await pool.query('SELECT * FROM gem_types');
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -182,25 +182,18 @@ app.get('/api/gems/:id', async (req, res) => {
 });
 
 /*******************************************
- * ★ サブスク状態チェック: checkSubscription
+ * サブスク状態チェック
  *******************************************/
 async function checkSubscription(req, res, next) {
   try {
     const userId = req.user.user_id;
-
-    // status='active' のサブスクがあるか確認
     const subRes = await pool.query(`
       SELECT * FROM subscriptions
        WHERE user_id = $1
          AND status = 'active'
        LIMIT 1
     `, [userId]);
-
-    if (subRes.rows.length === 0) {
-      req.isPaidUser = false;
-    } else {
-      req.isPaidUser = true;
-    }
+    req.isPaidUser = (subRes.rows.length > 0);
     next();
   } catch (err) {
     console.error(err);
@@ -209,14 +202,12 @@ async function checkSubscription(req, res, next) {
 }
 
 /*******************************************
- * ★ 年運API (annual_fortunes)
+ * 年運API (annual_fortunes)
  *******************************************/
 app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, async (req, res) => {
   try {
     const { year, gemTypeId } = req.params;
-
-    // データベースから年運を取得
-    const fortuneResult = await pool.query(`
+    const result = await pool.query(`
       SELECT content
         FROM annual_fortunes
        WHERE year = $1
@@ -224,13 +215,11 @@ app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, as
        LIMIT 1
     `, [year, gemTypeId]);
 
-    if (fortuneResult.rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'No annual fortune found' });
     }
 
-    let content = fortuneResult.rows[0].content;
-
-    // 有料ユーザーかどうかで表示切り替え
+    let content = result.rows[0].content;
     if (!req.isPaidUser) {
       content = maskContent(content);
     }
@@ -243,12 +232,12 @@ app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, as
 });
 
 /*******************************************
- * ★ 月運API (monthly_fortunes) (オプション)
+ * 月運API (monthly_fortunes)
  *******************************************/
 app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscription, async (req, res) => {
   try {
     const { year, month, gemTypeId } = req.params;
-    const fortuneResult = await pool.query(`
+    const result = await pool.query(`
       SELECT content
         FROM monthly_fortunes
        WHERE year = $1
@@ -257,11 +246,11 @@ app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscrip
        LIMIT 1
     `, [year, month, gemTypeId]);
 
-    if (fortuneResult.rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'No monthly fortune found' });
     }
 
-    let content = fortuneResult.rows[0].content;
+    let content = result.rows[0].content;
     if (!req.isPaidUser) {
       content = maskContent(content);
     }
@@ -274,10 +263,9 @@ app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscrip
 });
 
 /*******************************************
- * モザイク用の関数例
+ * モザイク処理の例
  *******************************************/
 function maskContent(originalText) {
-  // 例: 後半を "****" にする
   const cutoff = Math.floor(originalText.length / 2);
   return originalText.slice(0, cutoff) + ' ... ****(有料登録で全文表示)****';
 }
