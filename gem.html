@@ -26,14 +26,18 @@
   <main class="container" id="gemContent">
     <h1>宝石詳細ページ</h1>
 
-    <!-- JSでDBから取得した宝石データを挿入 -->
+    <!-- 初回ロード時にJSでDBから取得した宝石データを反映 -->
     <img id="gemIcon" src="" alt="宝石アイコン" style="width:50px; margin-right: 1rem;" />
     <h2 id="gemName">読み込み中...</h2>
     <p><strong>エレメント:</strong> <span id="gemElement"></span></p>
     <img id="mainImage" src="" alt="メインイメージ" style="display:block; margin:1rem 0;" />
     <p id="description" style="white-space: pre-wrap;">...</p>
 
-    <!-- 一覧に戻るリンク(あれば) -->
+    <!-- 追加: 再取得ボタン & 取得結果表示領域 -->
+    <button id="fetchGemBtn" style="margin: 1rem 0;">宝石データを再取得</button>
+    <div id="fetchResult" style="white-space: pre; background: #fafafa; padding: 1rem;"></div>
+
+    <!-- 一覧に戻る -->
     <a href="about.html#gem-section" class="cta-button" style="margin-top:1rem; display:inline-block;">一覧に戻る</a>
   </main>
 
@@ -49,30 +53,54 @@
     const gemTypeId = params.get('id'); 
     // 例: gem.html?id=1 → gemTypeId = "1"
 
-    // 2) APIにアクセスして、gemTypeIdに該当するデータを取得
+    // 2) /api/gems/:id へアクセスしてデータ取得
     async function fetchGemData(id) {
+      // ★ 注意 ★
+      // 実際の本番では "https://<your-backend>.onrender.com/api/gems/" + id
+      // など、リモートのURLに合わせて書き換えてください
       const url = `http://localhost:3000/api/gems/${id}`;
-      // 上記のportはindex.jsのportに合わせる
-      const res = await fetch(url);
-      if (!res.ok) {
-        console.error('Error fetching gem data:', res.status, res.statusText);
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.error('Error fetching gem data:', res.status, res.statusText);
+          return null;
+        }
+        return await res.json(); 
+      } catch (err) {
+        console.error('Network error:', err);
         return null;
       }
-      return await res.json(); 
     }
 
-    // 3) 取得したデータをHTML要素に反映
+    // 3) ページロード時に自動取得 → HTML要素に反映
     fetchGemData(gemTypeId).then(data => {
       if (data) {
-        document.getElementById('gemIcon').src = data.icon_url;
-        document.getElementById('gemName').textContent = data.gem_type_name;
-        document.getElementById('gemElement').textContent = data.element;
-        document.getElementById('mainImage').src = data.main_image_url;
-        document.getElementById('description').textContent = data.detail_description;
+        document.getElementById('gemIcon').src = data.icon_url || '';
+        document.getElementById('gemName').textContent = data.gem_type_name || '名称未設定';
+        document.getElementById('gemElement').textContent = data.element || 'エレメント不明';
+        document.getElementById('mainImage').src = data.main_image_url || '';
+        document.getElementById('description').textContent = data.detail_description || '説明文がありません。';
       } else {
         document.getElementById('gemName').textContent = '宝石情報が見つかりません。';
       }
     });
+
+    // 4) ボタンクリックで再取得 → #fetchResult にJSONを表示
+    const fetchGemBtn = document.getElementById('fetchGemBtn');
+    const fetchResultDiv = document.getElementById('fetchResult');
+
+    if (fetchGemBtn) {
+      fetchGemBtn.addEventListener('click', async () => {
+        const data = await fetchGemData(gemTypeId);
+        if (data) {
+          // JSON形式で表示
+          fetchResultDiv.textContent = JSON.stringify(data, null, 2);
+        } else {
+          fetchResultDiv.textContent = 'データを再取得できませんでした。';
+        }
+      });
+    }
   </script>
 </body>
 </html>

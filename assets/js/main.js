@@ -5,6 +5,7 @@
  * 2) fortuneForm（無料簡易診断）
  * 3) loginForm（ログイン → JWTトークン取得）
  * 4) subscribeForm（サブスク申し込み → token送信）
+ * 5) gem.html用: 宝石データ取得 (gemContent, fetchGemBtn)
  ***************************************************/
 
 // DOM読み込み完了時に一度だけ実行
@@ -70,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
+        // ★本番では “https://your-backend.onrender.com/api/login” に変える
         const res = await fetch('https://oracle-ja2k.onrender.com/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -111,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
+        // ★本番では “https://your-backend.onrender.com/api/subscribe” に変える
         const res = await fetch('https://oracle-ja2k.onrender.com/api/subscribe', {
           method: 'POST',
           headers: {
@@ -134,7 +137,75 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  /*****************************************
+   * 4) gem.html 用 (宝石データ取得)
+   *****************************************/
+  const gemContent = document.getElementById('gemContent'); 
+  // gem.html にだけ存在する要素 (id="gemContent")
+
+  if (gemContent) {
+    // gem.html であれば以下の処理を実行
+
+    // URLのクエリパラメータ (例: gem.html?id=1) を取得
+    const params = new URLSearchParams(location.search);
+    const gemTypeId = params.get('id'); 
+    // fetchGemDataの処理
+
+    // ページロード時に宝石データを読み込み、HTML要素に反映
+    fetchGemData(gemTypeId).then(data => {
+      if (data) {
+        // gemIcon, gemName, gemElement, mainImage, description を埋める
+        const gemIcon = document.getElementById('gemIcon');
+        const gemName = document.getElementById('gemName');
+        const gemElement = document.getElementById('gemElement');
+        const mainImage = document.getElementById('mainImage');
+        const description = document.getElementById('description');
+
+        if (gemIcon) gemIcon.src = data.icon_url || '';
+        if (gemName) gemName.textContent = data.gem_type_name || '名称不明';
+        if (gemElement) gemElement.textContent = data.element || 'エレメント不明';
+        if (mainImage) mainImage.src = data.main_image_url || '';
+        if (description) description.textContent = data.detail_description || '説明がありません。';
+      }
+    });
+
+    // 再取得ボタン (id="fetchGemBtn") と結果表示領域 (id="fetchResult")
+    const fetchGemBtn = document.getElementById('fetchGemBtn');
+    const fetchResultDiv = document.getElementById('fetchResult');
+
+    if (fetchGemBtn && fetchResultDiv) {
+      fetchGemBtn.addEventListener('click', async () => {
+        const data = await fetchGemData(gemTypeId);
+        if (data) {
+          // JSONを整形表示
+          fetchResultDiv.textContent = JSON.stringify(data, null, 2);
+        } else {
+          fetchResultDiv.textContent = 'データ取得に失敗しました。';
+        }
+      });
+    }
+  }
+
 });
+
+/***************************************************
+ * fetchGemData: /api/gems/:id を呼び出すユーティリティ
+ ***************************************************/
+async function fetchGemData(gemId) {
+  // ★本番では “https://your-backend.onrender.com/api/gems/${gemId}” に書き換える
+  const url = `https://oracle-ja2k.onrender.com/api/gems/${gemId}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error('Fetch error:', res.status, res.statusText);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('Network error:', err);
+    return null;
+  }
+}
 
 /***************************************************
  * 以下: 占い計算ロジック
@@ -145,18 +216,16 @@ document.addEventListener('DOMContentLoaded', () => {
  * 生年月日から宝石タイプとライフパスナンバーを計算
  */
 function calcBirthData(birthDateStr) {
-  // 例: "1988-05-22"
   const [year, month, day] = birthDateStr.split('-');
-  // 各桁を配列化
-  const digits = [...year, ...month, ...day].map(Number); 
+  const digits = [...year, ...month, ...day].map(Number);
   const sum = digits.reduce((a, b) => a + b, 0);
 
-  // 1) 宝石タイプ
+  // 宝石タイプ
   let gemNum = reduceToSingle(sum);
   if (gemNum > 7) gemNum -= 7;
   const gemType = getGemType(gemNum);
 
-  // 2) ライフパスナンバー (7を引かない)
+  // ライフパスナンバー (7を引かない)
   const lifePath = reduceToSingle(sum);
 
   return { gemType, lifePath };
