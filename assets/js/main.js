@@ -149,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // URLのクエリパラメータ (例: gem.html?id=1) を取得
     const params = new URLSearchParams(location.search);
     const gemTypeId = params.get('id'); 
-    // fetchGemDataの処理
 
     // ページロード時に宝石データを読み込み、HTML要素に反映
     fetchGemData(gemTypeId).then(data => {
@@ -165,7 +164,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gemName) gemName.textContent = data.gem_type_name || '名称不明';
         if (gemElement) gemElement.textContent = data.element || 'エレメント不明';
         if (mainImage) mainImage.src = data.main_image_url || '';
-        if (description) description.textContent = data.detail_description || '説明がありません。';
+
+        // ▼▼▼【修正ポイント】バックスラッシュを削除してから textContent に設定▼▼▼
+        if (description) {
+          const rawDesc = data.detail_description || '';
+          // バックスラッシュ全削除
+          const cleanedDesc = rawDesc.replace(/\\/g, '');
+          description.textContent = cleanedDesc;
+        }
+        // ▲▲▲ここまで修正▲▲▲
       }
     });
 
