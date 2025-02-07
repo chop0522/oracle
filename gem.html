@@ -31,6 +31,8 @@
     <h2 id="gemName">読み込み中...</h2>
     <p><strong>エレメント:</strong> <span id="gemElement"></span></p>
     <img id="mainImage" src="" alt="メインイメージ" style="display:block; margin:1rem 0;" />
+
+    <!-- white-space: pre-wrap; で改行を反映 -->
     <p id="description" style="white-space: pre-wrap;">...</p>
 
     <!-- 再取得ボタン & 取得結果表示領域 -->
@@ -51,13 +53,11 @@
     // 1) URLのクエリパラメータから gem_type_id を取得
     const params = new URLSearchParams(location.search);
     const gemTypeId = params.get('id'); 
-    // 例: gem.html?id=1 → gemTypeId = "1"
 
     // 2) /api/gems/:id へアクセスしてデータ取得
     async function fetchGemData(id) {
-      // ▼ ここをローカルホストから本番URLに修正
+      // ▼本番URL or 開発URLに合わせる
       const url = `https://oracle-ja2k.onrender.com/api/gems/${id}`;
-
       try {
         const res = await fetch(url);
         if (!res.ok) {
@@ -71,22 +71,27 @@
       }
     }
 
-    // 3) ページロード時に自動取得 → HTML要素に反映
+    // 3) ページロード時に自動取得
     fetchGemData(gemTypeId).then(data => {
       if (data) {
-        // 正常に取得できた場合
         document.getElementById('gemIcon').src = data.icon_url || '';
         document.getElementById('gemName').textContent = data.gem_type_name || '名称未設定';
         document.getElementById('gemElement').textContent = data.element || 'エレメント不明';
         document.getElementById('mainImage').src = data.main_image_url || '';
-        document.getElementById('description').textContent = data.detail_description || '説明文がありません。';
+
+        // ▼ 改行変換＋バックスラッシュ削除
+        let rawDesc = data.detail_description || '';
+        // "\n" を本当の改行にし、その後に余計な "\ " を消す
+        rawDesc = rawDesc.replace(/\\n/g, "\n").replace(/\\/g, "");
+
+        document.getElementById('description').textContent = rawDesc;
       } else {
-        // 取得失敗やデータなし
+        // 取得失敗
         document.getElementById('gemName').textContent = '宝石情報が見つかりません。';
       }
     });
 
-    // 4) ボタンクリックで再取得 → #fetchResult にJSONを表示
+    // 4) 再取得ボタン（デバッグ用）
     const fetchGemBtn = document.getElementById('fetchGemBtn');
     const fetchResultDiv = document.getElementById('fetchResult');
 
@@ -94,10 +99,9 @@
       fetchGemBtn.addEventListener('click', async () => {
         const data = await fetchGemData(gemTypeId);
         if (data) {
-          // JSON形式で表示
           fetchResultDiv.textContent = JSON.stringify(data, null, 2);
         } else {
-          fetchResultDiv.textContent = 'データを再取得できませんでした。';
+          fetchResultDiv.textContent = 'データ再取得に失敗しました。';
         }
       });
     }

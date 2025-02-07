@@ -165,14 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gemElement) gemElement.textContent = data.element || 'エレメント不明';
         if (mainImage) mainImage.src = data.main_image_url || '';
 
-        // ▼▼▼【修正ポイント】バックスラッシュを削除してから textContent に設定▼▼▼
-        if (description) {
-          const rawDesc = data.detail_description || '';
-          // バックスラッシュ全削除
-          const cleanedDesc = rawDesc.replace(/\\/g, '');
-          description.textContent = cleanedDesc;
-        }
-        // ▲▲▲ここまで修正▲▲▲
+        
       }
     });
 
