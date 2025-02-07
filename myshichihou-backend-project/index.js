@@ -1,8 +1,6 @@
 /*******************************************
- * index.js (本番向け・SSL修正済み)
+ * index.js (本番向け・SSL対応 + dotenvなし)
  *******************************************/
-
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -13,26 +11,28 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ★ DB接続 - SSL対応
+// ★ DB接続 - SSL対応 (Renderなど本番環境のみ想定)
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL || "postgresql://shichihou_db_user:cFyhY5GrDhWv5qIkchTX1Ay8RmeOKwHk@dpg-cugut9ij1k6c73b2t5u0-a.singapore-postgres.render.com/shichihou_db",  // Renderの環境変数
   ssl: {
     require: true,
     rejectUnauthorized: false
   }
 });
 
+// JWT秘密鍵は本番の環境変数で設定する (Renderダッシュボード etc.)
+const JWT_SECRET = process.env.JWT_SECRET || "chop748rhrust6giriufhirueurgh";
+
 /*******************************************
  * JWT認証ミドルウェア
  *******************************************/
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'] || '';
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(' ')[1]; // "Bearer <token>"
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
   }
-  const secretKey = process.env.JWT_SECRET || 'SECRET_KEY';
-  jwt.verify(token, secretKey, (err, decoded) => {
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid token' });
     }
@@ -45,14 +45,14 @@ function authenticateToken(req, res, next) {
  * 動作確認 (GET /)
  *******************************************/
 app.get('/', (req, res) => {
-  res.send('Hello from Node.js + DB (SSL)!');
+  res.send('Hello from Node.js + DB (SSL)! - (No dotenv for local dev)');
 });
 
 /*******************************************
  * ユーザー関連API
  *******************************************/
-
-// ユーザー一覧
+// ユーザー一覧 (デバッグ用)
+//   - 本番で公開するときは要注意（プライバシー管理）
 app.get('/api/users', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM users');
@@ -70,10 +70,12 @@ app.post('/api/register', async (req, res) => {
     const saltRounds = 10;
     const password_hash = await bcrypt.hash(password, saltRounds);
 
-    const result = await pool.query(`
-      INSERT INTO users (email, password_hash, name, birthdate)
-      VALUES ($1, $2, $3, $4) RETURNING user_id
-    `, [email, password_hash, name, birthdate]);
+    const result = await pool.query(
+      `INSERT INTO users (email, password_hash, name, birthdate)
+       VALUES ($1, $2, $3, $4)
+       RETURNING user_id`,
+      [email, password_hash, name, birthdate]
+    );
 
     res.json({
       user_id: result.rows[0].user_id,
@@ -89,11 +91,13 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const userResult = await pool.query(`
-      SELECT user_id, email, password_hash
-        FROM users
-       WHERE email = $1
-    `, [email]);
+
+    const userResult = await pool.query(
+      `SELECT user_id, email, password_hash
+         FROM users
+        WHERE email = $1`,
+      [email]
+    );
 
     if (userResult.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -105,11 +109,9 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // JWT発行
-    const secretKey = process.env.JWT_SECRET || 'SECRET_KEY';
     const token = jwt.sign(
       { user_id: user.user_id, email: user.email },
-      secretKey,
+      JWT_SECRET,
       { expiresIn: '2h' }
     );
 
@@ -126,18 +128,18 @@ app.post('/api/login', async (req, res) => {
 /*******************************************
  * サブスク関連API
  *******************************************/
-
 // サブスク登録
 app.post('/api/subscribe', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.user_id;
+    const userId = req.user.user_id; // JWTから
     const { plan, price } = req.body;
 
-    const result = await pool.query(`
-      INSERT INTO subscriptions (user_id, plan, price, status)
-      VALUES ($1, $2, $3, 'active')
-      RETURNING subscription_id
-    `, [userId, plan, price]);
+    const result = await pool.query(
+      `INSERT INTO subscriptions (user_id, plan, price, status)
+       VALUES ($1, $2, $3, 'active')
+       RETURNING subscription_id`,
+      [userId, plan, price]
+    );
 
     res.json({
       subscription_id: result.rows[0].subscription_id,
@@ -152,7 +154,6 @@ app.post('/api/subscribe', authenticateToken, async (req, res) => {
 /*******************************************
  * 宝石タイプAPI (gem_types)
  *******************************************/
-
 // 全取得
 app.get('/api/gems', async (req, res) => {
   try {
@@ -169,7 +170,7 @@ app.get('/api/gems/:id', async (req, res) => {
   try {
     const gemTypeId = req.params.id;
     const result = await pool.query(
-      'SELECT * FROM gem_types WHERE gem_type_id = $1',
+      `SELECT * FROM gem_types WHERE gem_type_id = $1`,
       [gemTypeId]
     );
     if (result.rows.length === 0) {
@@ -183,7 +184,7 @@ app.get('/api/gems/:id', async (req, res) => {
 });
 
 /*******************************************
- * サブスク状態チェック
+ * サブスク状態チェック (年運・月運など有料APIで利用)
  *******************************************/
 async function checkSubscription(req, res, next) {
   try {
@@ -208,23 +209,23 @@ async function checkSubscription(req, res, next) {
 app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, async (req, res) => {
   try {
     const { year, gemTypeId } = req.params;
-    const result = await pool.query(`
+    const query = `
       SELECT content
         FROM annual_fortunes
        WHERE year = $1
          AND gem_type_id = $2
        LIMIT 1
-    `, [year, gemTypeId]);
-
+    `;
+    const result = await pool.query(query, [year, gemTypeId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'No annual fortune found' });
     }
 
     let content = result.rows[0].content;
+    // 有料会員チェック
     if (!req.isPaidUser) {
       content = maskContent(content);
     }
-
     res.json({ content });
   } catch (err) {
     console.error(err);
@@ -238,15 +239,15 @@ app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, as
 app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscription, async (req, res) => {
   try {
     const { year, month, gemTypeId } = req.params;
-    const result = await pool.query(`
+    const query = `
       SELECT content
         FROM monthly_fortunes
        WHERE year = $1
          AND month = $2
          AND gem_type_id = $3
        LIMIT 1
-    `, [year, month, gemTypeId]);
-
+    `;
+    const result = await pool.query(query, [year, month, gemTypeId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'No monthly fortune found' });
     }
@@ -255,7 +256,6 @@ app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscrip
     if (!req.isPaidUser) {
       content = maskContent(content);
     }
-
     res.json({ content });
   } catch (err) {
     console.error(err);
@@ -268,7 +268,7 @@ app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscrip
  *******************************************/
 function maskContent(originalText) {
   const cutoff = Math.floor(originalText.length / 2);
-  return originalText.slice(0, cutoff) + ' ... ****(有料登録で全文表示)****';
+  return originalText.slice(0, cutoff) + ' ... ****(有料会員限定)****';
 }
 
 /*******************************************
