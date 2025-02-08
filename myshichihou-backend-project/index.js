@@ -1,5 +1,7 @@
 /*******************************************
- * index.js (本番向け・SSL対応 + dotenvなし)
+ * index.js (本番専用) 
+ *   - 環境変数 (process.env.DATABASE_URL, process.env.JWT_SECRET) を利用
+ *   - ローカル用ハードコード＆フォールバックを削除
  *******************************************/
 const express = require('express');
 const cors = require('cors');
@@ -13,15 +15,15 @@ app.use(express.json());
 
 // ★ DB接続 - SSL対応 (Renderなど本番環境のみ想定)
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgresql://shichihou_db_user:cFyhY5GrDhWv5qIkchTX1Ay8RmeOKwHk@dpg-cugut9ij1k6c73b2t5u0-a.singapore-postgres.render.com/shichihou_db",  // Renderの環境変数
+  connectionString: process.env.DATABASE_URL, // Renderに設定したDATABASE_URLをそのまま使う
   ssl: {
     require: true,
     rejectUnauthorized: false
   }
 });
 
-// JWT秘密鍵は本番の環境変数で設定する (Renderダッシュボード etc.)
-const JWT_SECRET = process.env.JWT_SECRET || "chop748rhrust6giriufhirueurgh";
+// JWT秘密鍵も本番の環境変数で設定する想定 (fallback削除)
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /*******************************************
  * JWT認証ミドルウェア
@@ -45,14 +47,12 @@ function authenticateToken(req, res, next) {
  * 動作確認 (GET /)
  *******************************************/
 app.get('/', (req, res) => {
-  res.send('Hello from Node.js + DB (SSL)! - (No dotenv for local dev)');
+  res.send('Hello from Node.js + DB (SSL)! - (No fallback for local)');
 });
 
 /*******************************************
  * ユーザー関連API
  *******************************************/
-// ユーザー一覧 (デバッグ用)
-//   - 本番で公開するときは要注意（プライバシー管理）
 app.get('/api/users', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM users');
@@ -63,7 +63,6 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// ユーザー登録
 app.post('/api/register', async (req, res) => {
   try {
     const { email, password, name, birthdate } = req.body;
@@ -87,7 +86,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// ログイン
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -109,6 +107,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // JWT発行
     const token = jwt.sign(
       { user_id: user.user_id, email: user.email },
       JWT_SECRET,
@@ -128,10 +127,9 @@ app.post('/api/login', async (req, res) => {
 /*******************************************
  * サブスク関連API
  *******************************************/
-// サブスク登録
 app.post('/api/subscribe', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.user_id; // JWTから
+    const userId = req.user.user_id;
     const { plan, price } = req.body;
 
     const result = await pool.query(
@@ -152,9 +150,8 @@ app.post('/api/subscribe', authenticateToken, async (req, res) => {
 });
 
 /*******************************************
- * 宝石タイプAPI (gem_types)
+ * 宝石タイプAPI
  *******************************************/
-// 全取得
 app.get('/api/gems', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM gem_types');
@@ -165,7 +162,6 @@ app.get('/api/gems', async (req, res) => {
   }
 });
 
-// 個別取得
 app.get('/api/gems/:id', async (req, res) => {
   try {
     const gemTypeId = req.params.id;
@@ -204,7 +200,7 @@ async function checkSubscription(req, res, next) {
 }
 
 /*******************************************
- * 年運API (annual_fortunes)
+ * 年運API
  *******************************************/
 app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, async (req, res) => {
   try {
@@ -222,7 +218,6 @@ app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, as
     }
 
     let content = result.rows[0].content;
-    // 有料会員チェック
     if (!req.isPaidUser) {
       content = maskContent(content);
     }
@@ -234,7 +229,7 @@ app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, as
 });
 
 /*******************************************
- * 月運API (monthly_fortunes)
+ * 月運API
  *******************************************/
 app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscription, async (req, res) => {
   try {
@@ -264,7 +259,7 @@ app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscrip
 });
 
 /*******************************************
- * モザイク処理の例
+ * モザイク処理
  *******************************************/
 function maskContent(originalText) {
   const cutoff = Math.floor(originalText.length / 2);

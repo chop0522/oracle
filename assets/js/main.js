@@ -166,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mainImage) mainImage.src = data.main_image_url || '';
 
         
+      
       }
     });
 
