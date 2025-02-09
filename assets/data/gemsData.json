@@ -1,0 +1,60 @@
+{
+    "gems": [
+      {
+        "id": "1",
+        "gem_type_name": "ダイヤモンド",
+        "element": "火",
+        "icon_url": "assets/images/diamond_icon.png",
+        "main_image_url": "assets/images/diamond_main.png",
+        "detail_description": "ダイヤモンドは火のエレメントに属し、情熱や行動力に優れます。\nカリスマ性があり、短気になりやすい面もあるので注意。"
+      },
+      {
+        "id": "2",
+        "gem_type_name": "ルビー",
+        "element": "火",
+        "icon_url": "assets/images/ruby_icon.png",
+        "main_image_url": "assets/images/ruby_main.png",
+        "detail_description": "ルビーは創造的な炎のエレメント。\n感情豊かでエネルギッシュですが、衝動的になりがち。"
+      },
+      {
+        "id": "3",
+        "gem_type_name": "サファイア",
+        "element": "水",
+        "icon_url": "assets/images/sapphire_icon.png",
+        "main_image_url": "assets/images/sapphire_main.png",
+        "detail_description": "サファイアは知的で感受性豊かな水のエレメント。\n内向的になりやすいが、人を癒す力を持つ。"
+      },
+      {
+        "id": "4",
+        "gem_type_name": "エメラルド",
+        "element": "風",
+        "icon_url": "assets/images/emerald_icon.png",
+        "main_image_url": "assets/images/emerald_main.png",
+        "detail_description": "エメラルドは風のエレメント。\nコミュニケーション力に優れ、柔軟性がある一方で優柔不断な傾向も。"
+      },
+      {
+        "id": "5",
+        "gem_type_name": "アメジスト",
+        "element": "土",
+        "icon_url": "assets/images/amethyst_icon.png",
+        "main_image_url": "assets/images/amethyst_main.png",
+        "detail_description": "アメジストは土のエレメント。\n安定感があり、忍耐強い性質。頑固さや保守的な面も。"
+      },
+      {
+        "id": "6",
+        "gem_type_name": "トパーズ",
+        "element": "風",
+        "icon_url": "assets/images/topaz_icon.png",
+        "main_image_url": "assets/images/topaz_main.png",
+        "detail_description": "トパーズは冒険心あふれる風のエレメント。\n自由を好む反面、飽きっぽいところが課題。"
+      },
+      {
+        "id": "7",
+        "gem_type_name": "オパール",
+        "element": "土",
+        "icon_url": "assets/images/opal_icon.png",
+        "main_image_url": "assets/images/opal_main.png",
+        "detail_description": "オパールは神秘的な土のエレメント。\n直感や芸術的才能に恵まれるが、地に足がつかない部分も。"
+      }
+    ]
+  }

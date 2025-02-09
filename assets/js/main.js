@@ -5,10 +5,9 @@
  * 2) fortuneForm（無料簡易診断）
  * 3) loginForm（ログイン → JWTトークン取得）
  * 4) subscribeForm（サブスク申し込み → token送信）
- * 5) gem.html用: 宝石データ取得 (gemContent, fetchGemBtn)
+ * 5) gem.html用: 宝石データを "assets/data/gemsData.json" から読み込み
  ***************************************************/
 
-// DOM読み込み完了時に一度だけ実行
 document.addEventListener('DOMContentLoaded', () => {
 
   /*****************************************
@@ -71,8 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        // ★本番では “https://your-backend.onrender.com/api/login” に変える
-        const res = await fetch('https://oracle-ja2k.onrender.com/api/login', {
+        // ★本番用のURLに書き換えて使用
+        // 例: const loginUrl = 'https://your-backend.onrender.com/api/login';
+        const loginUrl = 'https://oracle-ja2k.onrender.com/api/login';
+
+        const res = await fetch(loginUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -113,8 +115,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        // ★本番では “https://your-backend.onrender.com/api/subscribe” に変える
-        const res = await fetch('https://oracle-ja2k.onrender.com/api/subscribe', {
+        // ★本番用のURLに書き換えて使用
+        // 例: const subscribeUrl = 'https://your-backend.onrender.com/api/subscribe';
+        const subscribeUrl = 'https://oracle-ja2k.onrender.com/api/subscribe';
+
+        const res = await fetch(subscribeUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -138,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /*****************************************
-   * 4) gem.html 用 (宝石データ取得)
+   * 4) gem.html 用 (宝石データを "assets/data/gemsData.json" から取得)
    *****************************************/
   const gemContent = document.getElementById('gemContent'); 
   // gem.html にだけ存在する要素 (id="gemContent")
@@ -152,22 +157,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ページロード時に宝石データを読み込み、HTML要素に反映
     fetchGemData(gemTypeId).then(data => {
-      if (data) {
-        // gemIcon, gemName, gemElement, mainImage, description を埋める
-        const gemIcon = document.getElementById('gemIcon');
-        const gemName = document.getElementById('gemName');
-        const gemElement = document.getElementById('gemElement');
-        const mainImage = document.getElementById('mainImage');
-        const description = document.getElementById('description');
-
-        if (gemIcon) gemIcon.src = data.icon_url || '';
-        if (gemName) gemName.textContent = data.gem_type_name || '名称不明';
-        if (gemElement) gemElement.textContent = data.element || 'エレメント不明';
-        if (mainImage) mainImage.src = data.main_image_url || '';
-
-        
-      
+      if (!data) {
+        document.getElementById('gemName').textContent = '宝石情報が見つかりません。';
+        return;
       }
+
+      // gemIcon, gemName, gemElement, mainImage, description を埋める
+      const gemIcon = document.getElementById('gemIcon');
+      const gemName = document.getElementById('gemName');
+      const gemElement = document.getElementById('gemElement');
+      const mainImage = document.getElementById('mainImage');
+      const description = document.getElementById('description');
+
+      if (gemIcon) gemIcon.src = data.icon_url || '';
+      if (gemName) gemName.textContent = data.gem_type_name || '名称不明';
+      if (gemElement) gemElement.textContent = data.element || 'エレメント不明';
+      if (mainImage) mainImage.src = data.main_image_url || '';
+
+      // detail_description に "\n" を含む場合は改行として反映
+      let rawDesc = data.detail_description || '';
+      rawDesc = rawDesc.replace(/\\n/g, "\n").replace(/\\/g, "");
+      if (description) description.textContent = rawDesc;
     });
 
     // 再取得ボタン (id="fetchGemBtn") と結果表示領域 (id="fetchResult")
@@ -181,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // JSONを整形表示
           fetchResultDiv.textContent = JSON.stringify(data, null, 2);
         } else {
-          fetchResultDiv.textContent = 'データ取得に失敗しました。';
+          fetchResultDiv.textContent = 'データを再取得できませんでした。';
         }
       });
     }
@@ -190,15 +200,25 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /***************************************************
- * fetchGemData: /api/gems/:id を呼び出すユーティリティ
+ * fetchGemData: ローカルJSONから gemTypeId に該当する宝石データを返す
  ***************************************************/
 async function fetchGemData(gemId) {
-  // ★本番では “https://your-backend.onrender.com/api/gems/${gemId}” に書き換える
-  const url = `https://oracle-ja2k.onrender.com/api/gems/${gemId}`;
+  const allData = await fetchAllGemsData();
+  if (!allData) return null;
+  // allData.gemsから id==gemId のオブジェクトを検索
+  const gem = allData.gems.find(g => g.id === gemId);
+  return gem || null;
+}
+
+/***************************************************
+ * fetchAllGemsData: "assets/data/gemsData.json" を読み込み
+ ***************************************************/
+async function fetchAllGemsData() {
+  const url = 'assets/data/gemsData.json';
   try {
     const res = await fetch(url);
     if (!res.ok) {
-      console.error('Fetch error:', res.status, res.statusText);
+      console.error('Error fetching gemsData.json:', res.status, res.statusText);
       return null;
     }
     return await res.json();

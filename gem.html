@@ -26,18 +26,16 @@
   <main class="container" id="gemContent">
     <h1>宝石詳細ページ</h1>
 
-    <!-- 初回ロード時にJSでDBから取得した宝石データを反映 -->
+    <!-- 表示先 -->
     <img id="gemIcon" src="" alt="宝石アイコン" style="width:50px; margin-right: 1rem;" />
     <h2 id="gemName">読み込み中...</h2>
     <p><strong>エレメント:</strong> <span id="gemElement"></span></p>
     <img id="mainImage" src="" alt="メインイメージ" style="display:block; margin:1rem 0;" />
-
-    <!-- white-space: pre-wrap; で改行を反映 -->
     <p id="description" style="white-space: pre-wrap;">...</p>
 
-    <!-- 再取得ボタン & 取得結果表示領域 -->
-    <button id="fetchGemBtn" style="margin: 1rem 0;">宝石データを再取得</button>
-    <div id="fetchResult" style="white-space: pre; background: #fafafa; padding: 1rem;"></div>
+    <!-- デバッグボタン & 結果表示 -->
+    <button id="fetchGemBtn" style="margin:1rem 0;">宝石データを再取得</button>
+    <div id="fetchResult" style="white-space:pre; background:#fafafa; padding:1rem;"></div>
 
     <!-- 一覧に戻る -->
     <a href="about.html#gem-section" class="cta-button" style="margin-top:1rem; display:inline-block;">一覧に戻る</a>
@@ -49,62 +47,7 @@
     </div>
   </footer>
 
-  <script>
-    // 1) URLのクエリパラメータから gem_type_id を取得
-    const params = new URLSearchParams(location.search);
-    const gemTypeId = params.get('id'); 
-
-    // 2) /api/gems/:id へアクセスしてデータ取得
-    async function fetchGemData(id) {
-      // ▼本番URL or 開発URLに合わせる
-      const url = `https://oracle-ja2k.onrender.com/api/gems/${id}`;
-      try {
-        const res = await fetch(url);
-        if (!res.ok) {
-          console.error('Error fetching gem data:', res.status, res.statusText);
-          return null;
-        }
-        return await res.json(); 
-      } catch (err) {
-        console.error('Network error:', err);
-        return null;
-      }
-    }
-
-    // 3) ページロード時に自動取得
-    fetchGemData(gemTypeId).then(data => {
-      if (data) {
-        document.getElementById('gemIcon').src = data.icon_url || '';
-        document.getElementById('gemName').textContent = data.gem_type_name || '名称未設定';
-        document.getElementById('gemElement').textContent = data.element || 'エレメント不明';
-        document.getElementById('mainImage').src = data.main_image_url || '';
-
-        // ▼ 改行変換＋バックスラッシュ削除
-        let rawDesc = data.detail_description || '';
-        // "\n" を本当の改行にし、その後に余計な "\ " を消す
-        rawDesc = rawDesc.replace(/\\n/g, "\n").replace(/\\/g, "");
-
-        document.getElementById('description').textContent = rawDesc;
-      } else {
-        // 取得失敗
-        document.getElementById('gemName').textContent = '宝石情報が見つかりません。';
-      }
-    });
-
-    // 4) 再取得ボタン（デバッグ用）
-    const fetchGemBtn = document.getElementById('fetchGemBtn');
-    const fetchResultDiv = document.getElementById('fetchResult');
-
-    if (fetchGemBtn) {
-      fetchGemBtn.addEventListener('click', async () => {
-        const data = await fetchGemData(gemTypeId);
-        if (data) {
-          fetchResultDiv.textContent = JSON.stringify(data, null, 2);
-        } else {
-          fetchResultDiv.textContent = 'データ再取得に失敗しました。';
-        }
-      });
-    }
-  </script>
+  <!-- JS -->
+  <script src="assets/js/main.js"></script>
 </body>
 </html>
