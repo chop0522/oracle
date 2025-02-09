@@ -6,6 +6,7 @@
  * 3) loginForm（ログイン → JWTトークン取得）
  * 4) subscribeForm（サブスク申し込み → token送信）
  * 5) gem.html用: 宝石データを "assets/data/gemsData.json" から読み込み
+ * 6) service.html用: UI切り替え (ログイン状態確認→ボタン出し分け)
  ***************************************************/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -70,8 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        // ★本番用のURLに書き換えて使用
-        // 例: const loginUrl = 'https://your-backend.onrender.com/api/login';
+        // ★本番用のURLを適宜書き換えて使用
         const loginUrl = 'https://oracle-ja2k.onrender.com/api/login';
 
         const res = await fetch(loginUrl, {
@@ -83,6 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok) {
           // 成功: トークンを localStorage に保存
           localStorage.setItem('token', data.token);
+          // ユーザーのemailなども保存できる
+          localStorage.setItem('email', email);
+
           loginResultDiv.textContent = 'ログイン成功！トークンを保存しました。';
         } else {
           // 失敗: エラーメッセージ
@@ -115,8 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        // ★本番用のURLに書き換えて使用
-        // 例: const subscribeUrl = 'https://your-backend.onrender.com/api/subscribe';
+        // ★本番用のURLを適宜書き換えて使用
         const subscribeUrl = 'https://oracle-ja2k.onrender.com/api/subscribe';
 
         const res = await fetch(subscribeUrl, {
@@ -143,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /*****************************************
-   * 4) gem.html 用 (宝石データを "assets/data/gemsData.json" から取得)
+   * 4) gem.html 用 (宝石データを "assets/data/gemsData.json" から読み込み)
    *****************************************/
   const gemContent = document.getElementById('gemContent'); 
   // gem.html にだけ存在する要素 (id="gemContent")
@@ -162,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // gemIcon, gemName, gemElement, mainImage, description を埋める
       const gemIcon = document.getElementById('gemIcon');
       const gemName = document.getElementById('gemName');
       const gemElement = document.getElementById('gemElement');
@@ -174,7 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (gemElement) gemElement.textContent = data.element || 'エレメント不明';
       if (mainImage) mainImage.src = data.main_image_url || '';
 
-      // detail_description に "\n" を含む場合は改行として反映
       let rawDesc = data.detail_description || '';
       rawDesc = rawDesc.replace(/\\n/g, "\n").replace(/\\/g, "");
       if (description) description.textContent = rawDesc;
@@ -188,7 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchGemBtn.addEventListener('click', async () => {
         const data = await fetchGemData(gemTypeId);
         if (data) {
-          // JSONを整形表示
           fetchResultDiv.textContent = JSON.stringify(data, null, 2);
         } else {
           fetchResultDiv.textContent = 'データを再取得できませんでした。';
@@ -197,22 +196,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  /*****************************************
+   * 5) service.html 用: ログイン状態によるUI切り替え
+   *****************************************/
+  setupUserStatusUI();
+
 });
 
 /***************************************************
- * fetchGemData: ローカルJSONから gemTypeId に該当する宝石データを返す
+ * fetchGemData: ローカルJSONから gemTypeId に合う宝石オブジェクトを返す
  ***************************************************/
 async function fetchGemData(gemId) {
   const allData = await fetchAllGemsData();
   if (!allData) return null;
-  // allData.gemsから id==gemId のオブジェクトを検索
   const gem = allData.gems.find(g => g.id === gemId);
   return gem || null;
 }
 
-/***************************************************
- * fetchAllGemsData: "assets/data/gemsData.json" を読み込み
- ***************************************************/
 async function fetchAllGemsData() {
   const url = 'assets/data/gemsData.json';
   try {
@@ -229,32 +229,101 @@ async function fetchAllGemsData() {
 }
 
 /***************************************************
- * 以下: 占い計算ロジック
- * (calcBirthData / calcNameData / reduceToSingle / getGemType)
+ * service.html用のUI切り替え (ログイン状態チェック→ボタン制御)
  ***************************************************/
+function setupUserStatusUI() {
+  const userStatusSection = document.getElementById('userStatusSection');
+  if (!userStatusSection) return; // service.html 以外はスキップ
 
-/**
- * 生年月日から宝石タイプとライフパスナンバーを計算
- */
+  const userStatusMsg = document.getElementById('userStatusMsg');
+  const goLoginBtn = document.getElementById('goLoginBtn');
+  const goSubscribeBtn = document.getElementById('goSubscribeBtn');
+
+  // 申し込みボタン(年間運勢/特別鑑定) 
+  const annualReportBtn = document.getElementById('annualReportBtn');
+  const specialPlanBtn = document.getElementById('specialPlanBtn');
+  // (個別鑑定は削除したため存在しない)
+
+  const token = localStorage.getItem('token');
+  const userEmail = localStorage.getItem('email') || '(不明)';
+
+  if (!token) {
+    // 未ログイン
+    if (userStatusMsg) {
+      userStatusMsg.textContent = '未ログインです。有料サービスのご利用にはログインが必要です。';
+    }
+    if (goLoginBtn) {
+      goLoginBtn.style.display = 'inline-block';
+      goLoginBtn.addEventListener('click', () => {
+        // ログインページ（例: login.html）へ誘導
+        window.location.href = 'login.html';
+      });
+    }
+    if (goSubscribeBtn) {
+      goSubscribeBtn.style.display = 'none';
+    }
+
+    // 申し込むボタンをクリックしたらログインページへ
+    if (annualReportBtn) {
+      annualReportBtn.addEventListener('click', () => {
+        alert('ログインが必要です。ログインページに移動します。');
+        window.location.href = 'login.html';
+      });
+    }
+    if (specialPlanBtn) {
+      specialPlanBtn.addEventListener('click', () => {
+        alert('ログインが必要です。ログインページに移動します。');
+        window.location.href = 'login.html';
+      });
+    }
+
+  } else {
+    // ログイン済み
+    if (userStatusMsg) {
+      userStatusMsg.textContent = `ログイン中: ${userEmail} 様`;
+    }
+    if (goLoginBtn) {
+      goLoginBtn.style.display = 'none';
+    }
+    if (goSubscribeBtn) {
+      goSubscribeBtn.style.display = 'inline-block';
+      goSubscribeBtn.addEventListener('click', () => {
+        // サブスクフォームのあるページ or セクションへ飛ぶなど
+        // 例: service.html内に #subscribeFormSection があればそこへ移動
+        window.location.href = '#subscribeForm';
+      });
+    }
+
+    // 申し込みボタンをクリックしたらサブスクフォームへ
+    if (annualReportBtn) {
+      annualReportBtn.addEventListener('click', () => {
+        window.location.href = '#subscribeForm';
+      });
+    }
+    if (specialPlanBtn) {
+      specialPlanBtn.addEventListener('click', () => {
+        window.location.href = '#subscribeForm';
+      });
+    }
+  }
+}
+
+/***************************************************
+ * 以下: 占い計算ロジック
+ ***************************************************/
 function calcBirthData(birthDateStr) {
   const [year, month, day] = birthDateStr.split('-');
   const digits = [...year, ...month, ...day].map(Number);
   const sum = digits.reduce((a, b) => a + b, 0);
 
-  // 宝石タイプ
   let gemNum = reduceToSingle(sum);
   if (gemNum > 7) gemNum -= 7;
   const gemType = getGemType(gemNum);
 
-  // ライフパスナンバー (7を引かない)
   const lifePath = reduceToSingle(sum);
-
   return { gemType, lifePath };
 }
 
-/**
- * 一桁になるまで足し続ける数秘術的処理
- */
 function reduceToSingle(num) {
   let result = num;
   while (result > 9) {
@@ -264,9 +333,6 @@ function reduceToSingle(num) {
   return result;
 }
 
-/**
- * 宝石タイプ番号 -> 宝石名
- */
 function getGemType(num) {
   switch(num) {
     case 1: return 'ダイヤモンド（火のエレメント）';
@@ -280,9 +346,6 @@ function getGemType(num) {
   }
 }
 
-/**
- * 名前からソウルナンバー＆表現数を算出
- */
 function calcNameData(nameStr) {
   const upperName = nameStr.toUpperCase().replace(/\s+/g, '');
   const charToNum = {
