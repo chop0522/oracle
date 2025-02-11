@@ -1,6 +1,6 @@
 /*******************************************
  * index.js (本番専用) 
- *   - 環境変数 (process.env.DATABASE_URL, process.env.JWT_SECRET) を利用
+ *   - 環境変数 (process.env.DATABASE_URL, process.env.JWT_SECRET, process.env.STRIPE_SECRET_KEY) を利用
  *   - ローカル用ハードコード＆フォールバックを削除
  *******************************************/
 const express = require('express');
@@ -8,6 +8,10 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+
+// ★ Stripe の導入
+// Renderの環境変数 "STRIPE_SECRET_KEY" にテスト or 本番キーを設定しておく
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 app.use(cors());
@@ -259,12 +263,57 @@ app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscrip
 });
 
 /*******************************************
- * モザイク処理
+ * モザイク処理 (有料会員でない場合の伏字)
  *******************************************/
 function maskContent(originalText) {
   const cutoff = Math.floor(originalText.length / 2);
   return originalText.slice(0, cutoff) + ' ... ****(有料会員限定)****';
 }
+
+/*******************************************
+ * Stripe 決済導入 (例: create-checkout-session)
+ *******************************************/
+// 新規ルートを追加: POST /api/payment/create-checkout-session
+// RenderのENVに STRIPE_SECRET_KEY を設定しておく
+app.post('/api/payment/create-checkout-session', authenticateToken, async (req, res) => {
+  try {
+    // planType: 'monthly' or 'annual' などフロントから送られる想定
+    const { planType } = req.body;
+    const userId = req.user.user_id;  // JWTから
+
+    // Stripe PriceIDを分岐（ダッシュボードで作成したもの）
+    let priceId = '';
+    if (planType === 'monthly') {
+      priceId = 'price_1Qqbz0RYC6bzdq0lNtKREtAs'; // 例:  "price_abc123"
+    } else if (planType === 'annual') {
+      priceId = 'price_1QrIefRYC6bzdq0lnx18O08B';
+    } else {
+      return res.status(400).json({ error: 'Invalid planType' });
+    }
+
+    // CheckoutSession作成
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription', // サブスク
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1
+        }
+      ],
+      success_url: 'https://stirring-sunflower-f2ca8e.netlify.app/payment-success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: 'https://stirring-sunflower-f2ca8e.netlify.app/payment-cancel',
+      // 必要に応じてメールアドレスを付与
+      //  userのemailは tokensに含まれている or DBから再取得する等
+      // 例: customer_email: 'example@example.com',
+    });
+
+    res.json({ url: session.url }); // フロントでこれを受け取って window.location = url;
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
 
 /*******************************************
  * サーバー起動
