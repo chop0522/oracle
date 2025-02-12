@@ -11,7 +11,7 @@
   <!-- ヘッダー -->
   <header class="site-header">
     <div class="header-inner">
-      <!-- ロゴアイコン（仮） -->
+      <!-- ロゴ -->
       <a href="index.html" class="site-logo">
         <img src="assets/images/icon.png" alt="七宝占術ロゴ" class="logo-img" />
         <span class="site-title">七宝占術</span>
@@ -76,7 +76,7 @@
     </div>
   </section>
 
-  <!-- ▼ ここから追加: ログインフォーム & サブスクフォーム -->
+  <!-- ▼ ログインフォーム -->
   <section class="section" id="login-section">
     <div class="container">
       <h2>ログイン</h2>
@@ -96,27 +96,22 @@
     </div>
   </section>
 
-  <section class="section" id="subscribe-section">
+  <!-- ▼ Stripe Checkout用ボタン (旧サブスクフォームは削除) -->
+  <section class="section" id="stripe-checkout-section">
     <div class="container">
-      <h2>有料サブスク登録</h2>
-      <form id="subscribeForm">
-        <div class="form-group">
-          <label for="plan">プラン:</label>
-          <select id="plan" name="plan" required>
-            <option value="monthly">月額プラン</option>
-            <option value="annual">年額プラン</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="price">料金:</label>
-          <input type="number" id="price" name="price" value="500" required>
-        </div>
-        <button type="submit">サブスク申し込み</button>
-      </form>
-      <div id="subscribeResult"></div>
+      <h2>Stripeでサブスク購入 (自動決済)</h2>
+      <p>こちらのボタンからStripe決済画面に移動し、月額/年額プランをお支払いできます。</p>
+      <div style="margin:1rem 0;">
+        <button class="cta-button" onclick="openStripeCheckout('monthly')">月額プランを購入 (Stripe)</button>
+        <button class="cta-button" onclick="openStripeCheckout('annual')">年額プランを購入 (Stripe)</button>
+      </div>
+      <p>
+        ※ログインしている必要があります。<br>
+        ※テストモードであればカード番号 <code>4242 4242 4242 4242</code>、有効期限 <code>04/24</code> などでテスト可能。
+      </p>
     </div>
   </section>
-  <!-- ▲ ここまで追加 -->
+  <!-- ▲ ここまで Stripe Checkout セクション -->
 
   <!-- フッター -->
   <footer class="site-footer">
