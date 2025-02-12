@@ -6,8 +6,9 @@
  * 2) fortuneForm（無料簡易診断）
  * 3) loginForm（ログイン → JWTトークン取得）
  * 4) gem.html用: 宝石データを "assets/data/gemsData.json" から読み込み
- * 5) service.html用: UI切り替え (ログイン状態確認→ボタン出し分け)
+ * 5) service.html用: UI切り替え (ログイン状態確認→ボタン出しわけ)
  * 6) Stripe Checkout呼び出し (openStripeCheckout)
+ * 7) ログアウト関数 (logout)
  ***************************************************/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -145,8 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function fetchGemData(gemId) {
   const allData = await fetchAllGemsData();
   if (!allData) return null;
-  const gem = allData.gems.find(g => g.id === gemId);
-  return gem || null;
+  return allData.gems.find(g => g.id === gemId) || null;
 }
 
 async function fetchAllGemsData() {
@@ -165,8 +165,8 @@ async function fetchAllGemsData() {
 }
 
 /***************************************************
- * setupUserStatusUI: (service.html) 
- * ここでは空処理 or 必要に応じて拡張
+ * setupUserStatusUI: (service.html)
+ * （ここでは特に何もしていないが、service.html側に合わせて実装可能）
  ***************************************************/
 function setupUserStatusUI() {
   // もしservice.htmlでログイン状態を切り替えるなら記述
@@ -203,8 +203,19 @@ async function openStripeCheckout(planType) {
     }
   } catch (err) {
     console.error(err);
-    alert('通信エラーが発生しました。詳細: ' + err);
+    alert('通信エラーが発生しました: ' + err);
   }
+}
+
+/***************************************************
+ * 7) ログアウト用関数
+ ***************************************************/
+function logout() {
+  // ローカルストレージのトークン/メールを削除し、未ログイン状態に戻す
+  localStorage.removeItem('token');
+  localStorage.removeItem('email');
+  // ログインページへ移動 or 画面リロード
+  window.location.href = 'login.html'; // 例: login.html へ
 }
 
 /***************************************************

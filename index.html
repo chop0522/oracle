@@ -11,7 +11,7 @@
   <!-- ヘッダー -->
   <header class="site-header">
     <div class="header-inner">
-      <!-- ロゴ -->
+      <!-- ロゴアイコン -->
       <a href="index.html" class="site-logo">
         <img src="assets/images/icon.png" alt="七宝占術ロゴ" class="logo-img" />
         <span class="site-title">七宝占術</span>
@@ -23,6 +23,8 @@
           <li><a href="about.html">七宝占術とは</a></li>
           <li><a href="service.html">有料サービス</a></li>
           <li><a href="contact.html">お問い合わせ</a></li>
+          <!-- ▼ ログアウトボタンをナビに追加 (お好みで) -->
+          <li><button onclick="logout()" style="margin-left:1rem;">ログアウト</button></li>
         </ul>
       </nav>
     </div>
@@ -76,7 +78,7 @@
     </div>
   </section>
 
-  <!-- ▼ ログインフォーム -->
+  <!-- ログインフォーム -->
   <section class="section" id="login-section">
     <div class="container">
       <h2>ログイン</h2>
@@ -96,18 +98,18 @@
     </div>
   </section>
 
-  <!-- ▼ Stripe Checkout用ボタン (旧サブスクフォームは削除) -->
+  <!-- ▼ Stripe Checkout用ボタン (旧サブスクフォーム削除) -->
   <section class="section" id="stripe-checkout-section">
     <div class="container">
-      <h2>Stripeでサブスク購入 (自動決済)</h2>
+      <h2>Stripeサブスク（自動決済）</h2>
       <p>こちらのボタンからStripe決済画面に移動し、月額/年額プランをお支払いできます。</p>
       <div style="margin:1rem 0;">
-        <button class="cta-button" onclick="openStripeCheckout('monthly')">月額プランを購入 (Stripe)</button>
-        <button class="cta-button" onclick="openStripeCheckout('annual')">年額プランを購入 (Stripe)</button>
+        <button class="cta-button" onclick="openStripeCheckout('monthly')">月額プラン (Stripe)</button>
+        <button class="cta-button" onclick="openStripeCheckout('annual')">年額プラン (Stripe)</button>
       </div>
       <p>
         ※ログインしている必要があります。<br>
-        ※テストモードであればカード番号 <code>4242 4242 4242 4242</code>、有効期限 <code>04/24</code> などでテスト可能。
+        ※テストモードであればカード番号 <code>4242 4242 4242 4242</code>、有効期限 <code>04/24</code>などでテスト可能。
       </p>
     </div>
   </section>
@@ -116,7 +118,7 @@
   <!-- フッター -->
   <footer class="site-footer">
     <div class="footer-inner">
-      <p>&copy; 2024 七宝占術. All Rights Reserved.</p>
+      <p>&copy; 2025 七宝占術. All Rights Reserved.</p>
     </div>
   </footer>
 
