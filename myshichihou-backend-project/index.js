@@ -1,7 +1,6 @@
 /*******************************************
- * index.js (本番専用) 
- *   - 環境変数 (process.env.DATABASE_URL, process.env.JWT_SECRET, process.env.STRIPE_SECRET_KEY) を利用
- *   - ローカル用ハードコード＆フォールバックを削除
+ * index.js (本番専用, Webhook導入)
+ *   - 既存のサブスク・StripeCheckoutに加え、Webhook実装
  *******************************************/
 const express = require('express');
 const cors = require('cors');
@@ -10,23 +9,28 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 // ★ Stripe の導入
-// Renderの環境変数 "STRIPE_SECRET_KEY" にテスト or 本番キーを設定しておく
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// ★ Webhook 署名シークレット
+// Renderダッシュボードに STRIPE_WEBHOOK_SECRET を設定し、ここで読み込む
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 const app = express();
 app.use(cors());
+
+// 注意: /webhook/stripe だけは rawボディで受け取る
+app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
+
+// それ以外のルートは JSONパーサでOK
 app.use(express.json());
 
-// ★ DB接続 - SSL対応 (Renderなど本番環境のみ想定)
+// ★ DB接続 - SSL対応
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // Renderに設定したDATABASE_URLをそのまま使う
-  ssl: {
-    require: true,
-    rejectUnauthorized: false
-  }
+  connectionString: process.env.DATABASE_URL,
+  ssl: { require: true, rejectUnauthorized: false }
 });
 
-// JWT秘密鍵も本番の環境変数で設定する想定 (fallback削除)
+// JWT秘密鍵
 const JWT_SECRET = process.env.JWT_SECRET;
 
 /*******************************************
@@ -34,7 +38,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
  *******************************************/
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'] || '';
-  const token = authHeader.split(' ')[1]; // "Bearer <token>"
+  const token = authHeader.split(' ')[1]; 
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
   }
@@ -42,7 +46,7 @@ function authenticateToken(req, res, next) {
     if (err) {
       return res.status(403).json({ error: 'Invalid token' });
     }
-    req.user = decoded; // { user_id, email, iat, exp }
+    req.user = decoded; 
     next();
   });
 }
@@ -51,11 +55,11 @@ function authenticateToken(req, res, next) {
  * 動作確認 (GET /)
  *******************************************/
 app.get('/', (req, res) => {
-  res.send('Hello from Node.js + DB (SSL)! - (No fallback for local)');
+  res.send('Hello from Node.js + DB + Stripe + Webhook!');
 });
 
 /*******************************************
- * ユーザー関連API
+ * ユーザー関連API（省略なし）
  *******************************************/
 app.get('/api/users', async (req, res) => {
   try {
@@ -111,7 +115,6 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // JWT発行
     const token = jwt.sign(
       { user_id: user.user_id, email: user.email },
       JWT_SECRET,
@@ -263,7 +266,7 @@ app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscrip
 });
 
 /*******************************************
- * モザイク処理 (有料会員でない場合の伏字)
+ * モザイク処理
  *******************************************/
 function maskContent(originalText) {
   const cutoff = Math.floor(originalText.length / 2);
@@ -271,20 +274,17 @@ function maskContent(originalText) {
 }
 
 /*******************************************
- * Stripe 決済導入 (例: create-checkout-session)
+ * Stripe 決済 (create-checkout-session)
  *******************************************/
-// 新規ルートを追加: POST /api/payment/create-checkout-session
-// RenderのENVに STRIPE_SECRET_KEY を設定しておく
 app.post('/api/payment/create-checkout-session', authenticateToken, async (req, res) => {
   try {
-    // planType: 'monthly' or 'annual' などフロントから送られる想定
     const { planType } = req.body;
-    const userId = req.user.user_id;  // JWTから
+    const userId = req.user.user_id;
 
-    // Stripe PriceIDを分岐（ダッシュボードで作成したもの）
     let priceId = '';
     if (planType === 'monthly') {
-      priceId = 'price_1Qqbz0RYC6bzdq0lNtKREtAs'; // 例:  "price_abc123"
+      // ここにあなたの "price_..." を
+      priceId = 'price_1Qqbz0RYC6bzdq0lNtKREtAs';
     } else if (planType === 'annual') {
       priceId = 'price_1QrIefRYC6bzdq0lnx18O08B';
     } else {
@@ -294,25 +294,84 @@ app.post('/api/payment/create-checkout-session', authenticateToken, async (req, 
     // CheckoutSession作成
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      mode: 'subscription', // サブスク
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1
-        }
-      ],
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: 'https://stirring-sunflower-f2ca8e.netlify.app/payment-success?session_id={CHECKOUT_SESSION_ID}',
       cancel_url: 'https://stirring-sunflower-f2ca8e.netlify.app/payment-cancel',
-      // 必要に応じてメールアドレスを付与
-      //  userのemailは tokensに含まれている or DBから再取得する等
-      // 例: customer_email: 'example@example.com',
+
+      // Webhookで userId を特定するため metadataに入れる
+      metadata: { userId: String(userId) }
     });
 
-    res.json({ url: session.url }); // フロントでこれを受け取って window.location = url;
+    res.json({ url: session.url });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create checkout session' });
   }
+});
+
+/*******************************************
+ * Stripe Webhook ルート (/webhook/stripe)
+ *******************************************/
+// ここで Stripe からのイベント通知を受け取り、DBを更新
+app.post('/webhook/stripe', async (req, res) => {
+  // bodyは raw で受け取らないと署名検証に失敗するので注意
+  // → 上部で app.use('/webhook/stripe', express.raw({ type: 'application/json' })) を適用済み
+  const sig = req.headers['stripe-signature'];
+  if (!sig) {
+    return res.status(400).send('Missing Stripe Signature');
+  }
+
+  let event;
+
+  try {
+    // ここで署名検証
+    event = stripe.webhooks.constructEvent(
+      req.body,  // raw body
+      sig,
+      endpointSecret // process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.error('Webhook signature verification failed.', err);
+    return res.sendStatus(400);
+  }
+
+  // イベントに応じた処理
+  switch (event.type) {
+    case 'checkout.session.completed':
+      {
+        const session = event.data.object;
+        // session.metadata.userId を取り出して DB更新
+        const userId = session.metadata?.userId;
+        if (!userId) {
+          console.warn('No userId in session.metadata');
+          break;
+        }
+        console.log(`Payment success for userId=${userId}, setting sub active...`);
+
+        // ここで subscriptionsテーブルを activeに更新
+        try {
+          await pool.query(
+            `UPDATE subscriptions 
+               SET status='active'
+             WHERE user_id=$1 
+               AND status<>'active'`,
+            [userId]
+          );
+        } catch (dbErr) {
+          console.error('Failed to update subscription:', dbErr);
+        }
+      }
+      break;
+
+    // 他に invoice.payment_succeeded, invoice.payment_failed, customer.subscription.deleted などを追記可
+
+    default:
+      console.log(`Unhandled event type: ${event.type}`);
+      break;
+  }
+
+  res.json({ received: true });
 });
 
 /*******************************************
