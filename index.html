@@ -23,8 +23,10 @@
           <li><a href="about.html">七宝占術とは</a></li>
           <li><a href="service.html">有料サービス</a></li>
           <li><a href="contact.html">お問い合わせ</a></li>
-          <!-- ▼ ログアウトボタンをナビに追加 (お好みで) -->
+          <!-- ▼ ここでログアウトボタン -->
           <li><button onclick="logout()" style="margin-left:1rem;">ログアウト</button></li>
+          <!-- ▼ 追加: 有料ページへのリンク -->
+          <li><a href="premium.html" style="margin-left:1rem;">有料コンテンツ</a></li>
         </ul>
       </nav>
     </div>
@@ -98,7 +100,7 @@
     </div>
   </section>
 
-  <!-- ▼ Stripe Checkout用ボタン (旧サブスクフォーム削除) -->
+  <!-- ▼ Stripe Checkout用ボタン (旧サブスクフォームは削除済み) -->
   <section class="section" id="stripe-checkout-section">
     <div class="container">
       <h2>Stripeサブスク（自動決済）</h2>
@@ -109,7 +111,7 @@
       </div>
       <p>
         ※ログインしている必要があります。<br>
-        ※テストモードであればカード番号 <code>4242 4242 4242 4242</code>、有効期限 <code>04/24</code>などでテスト可能。
+        ※テストモードの場合はカード番号 <code>4242 4242 4242 4242</code>、有効期限 <code>04/24</code> などを入力可能。
       </p>
     </div>
   </section>
