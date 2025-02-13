@@ -1,6 +1,7 @@
 /*******************************************
- * index.js (本番専用, Webhook導入)
- *   - 既存のサブスク・StripeCheckoutに加え、Webhook実装
+ * index.js (Webhook導入 + 有料コンテンツAPI)
+ *   - Stripe Checkout & Webhook済み
+ *   - 追加: /api/premium-content で有料向けの情報を返す
  *******************************************/
 const express = require('express');
 const cors = require('cors');
@@ -12,7 +13,6 @@ const jwt = require('jsonwebtoken');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // ★ Webhook 署名シークレット
-// Renderダッシュボードに STRIPE_WEBHOOK_SECRET を設定し、ここで読み込む
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 const app = express();
@@ -20,8 +20,7 @@ app.use(cors());
 
 // 注意: /webhook/stripe だけは rawボディで受け取る
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
-
-// それ以外のルートは JSONパーサでOK
+// 他のルートは通常JSONをOK
 app.use(express.json());
 
 // ★ DB接続 - SSL対応
@@ -38,7 +37,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
  *******************************************/
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'] || '';
-  const token = authHeader.split(' ')[1]; 
+  const token = authHeader.split(' ')[1];
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
   }
@@ -46,7 +45,7 @@ function authenticateToken(req, res, next) {
     if (err) {
       return res.status(403).json({ error: 'Invalid token' });
     }
-    req.user = decoded; 
+    req.user = decoded;
     next();
   });
 }
@@ -55,11 +54,11 @@ function authenticateToken(req, res, next) {
  * 動作確認 (GET /)
  *******************************************/
 app.get('/', (req, res) => {
-  res.send('Hello from Node.js + DB + Stripe + Webhook!');
+  res.send('Hello from Node.js + DB + Stripe + Webhook + PremiumContent!');
 });
 
 /*******************************************
- * ユーザー関連API（省略なし）
+ * ユーザー関連API
  *******************************************/
 app.get('/api/users', async (req, res) => {
   try {
@@ -115,6 +114,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // JWT発行
     const token = jwt.sign(
       { user_id: user.user_id, email: user.email },
       JWT_SECRET,
@@ -207,7 +207,7 @@ async function checkSubscription(req, res, next) {
 }
 
 /*******************************************
- * 年運API
+ * 年運API (既存)
  *******************************************/
 app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, async (req, res) => {
   try {
@@ -236,7 +236,7 @@ app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, as
 });
 
 /*******************************************
- * 月運API
+ * 月運API (既存)
  *******************************************/
 app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscription, async (req, res) => {
   try {
@@ -298,8 +298,6 @@ app.post('/api/payment/create-checkout-session', authenticateToken, async (req, 
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: 'https://stirring-sunflower-f2ca8e.netlify.app/payment-success?session_id={CHECKOUT_SESSION_ID}',
       cancel_url: 'https://stirring-sunflower-f2ca8e.netlify.app/payment-cancel',
-
-      // Webhookで userId を特定するため metadataに入れる
       metadata: { userId: String(userId) }
     });
 
@@ -313,35 +311,24 @@ app.post('/api/payment/create-checkout-session', authenticateToken, async (req, 
 /*******************************************
  * Stripe Webhook ルート (/webhook/stripe)
  *******************************************/
-// ここで Stripe からのイベント通知を受け取り、DBを更新
 app.post('/webhook/stripe', async (req, res) => {
-  // bodyは raw で受け取らないと署名検証に失敗するので注意
-  // → 上部で app.use('/webhook/stripe', express.raw({ type: 'application/json' })) を適用済み
   const sig = req.headers['stripe-signature'];
   if (!sig) {
     return res.status(400).send('Missing Stripe Signature');
   }
 
   let event;
-
   try {
-    // ここで署名検証
-    event = stripe.webhooks.constructEvent(
-      req.body,  // raw body
-      sig,
-      endpointSecret // process.env.STRIPE_WEBHOOK_SECRET
-    );
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err) {
     console.error('Webhook signature verification failed.', err);
     return res.sendStatus(400);
   }
 
-  // イベントに応じた処理
   switch (event.type) {
     case 'checkout.session.completed':
       {
         const session = event.data.object;
-        // session.metadata.userId を取り出して DB更新
         const userId = session.metadata?.userId;
         if (!userId) {
           console.warn('No userId in session.metadata');
@@ -349,7 +336,6 @@ app.post('/webhook/stripe', async (req, res) => {
         }
         console.log(`Payment success for userId=${userId}, setting sub active...`);
 
-        // ここで subscriptionsテーブルを activeに更新
         try {
           await pool.query(
             `UPDATE subscriptions 
@@ -364,14 +350,48 @@ app.post('/webhook/stripe', async (req, res) => {
       }
       break;
 
-    // 他に invoice.payment_succeeded, invoice.payment_failed, customer.subscription.deleted などを追記可
-
     default:
       console.log(`Unhandled event type: ${event.type}`);
       break;
   }
 
   res.json({ received: true });
+});
+
+/*******************************************
+ * ★ 新規: 有料向けコンテンツAPI
+ *******************************************/
+app.get('/api/premium-content', authenticateToken, async (req, res) => {
+  try {
+    // 1) JWTから user_id を取得
+    const userId = req.user.user_id;
+
+    // 2) activeサブスクかチェック
+    const subRes = await pool.query(`
+      SELECT * FROM subscriptions
+       WHERE user_id = $1
+         AND status = 'active'
+       LIMIT 1
+    `, [userId]);
+
+    if (subRes.rows.length === 0) {
+      // サブスクが無い/無効
+      return res.status(403).json({ error: 'No active subscription' });
+    }
+
+    // 3) 有料専用のデータを返す(例)
+    // 実際はDBから読み込んでもOK
+    const premiumData = {
+      title: "有料専用のプレミアム占い",
+      detail: "ここに高度な占い結果や深いコラムを配置可能。"
+    };
+
+    res.json(premiumData);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 /*******************************************
