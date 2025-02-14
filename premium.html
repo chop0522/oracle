@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>有料限定コンテンツ</title>
+  <title>有料会員限定コンテンツ</title>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -19,6 +19,8 @@
           <li><a href="service.html">有料サービス</a></li>
           <li><a href="contact.html">お問い合わせ</a></li>
           <li><button onclick="logout()">ログアウト</button></li>
+          <!-- もし他のページ同様、premium.htmlのリンクをナビに追加したいなら:
+               <li><a href="premium.html" class="active">有料コンテンツ</a></li> -->
         </ul>
       </nav>
     </div>
@@ -26,11 +28,37 @@
 
   <main class="container">
     <h1>有料会員限定コンテンツ</h1>
-    <div id="premiumContent">
-      <!-- JSで /api/premium-content を呼んで表示 -->
-      <p>読み込み中...</p>
-    </div>
-    <div id="errorMsg" style="color:red;"></div>
+
+    <!-- 1) プレミアムコンテンツ表示領域 -->
+    <section id="premiumContentSection">
+      <div id="premiumContent">
+        <!-- JSで /api/premium-content を呼んで表示 -->
+        <p>読み込み中...</p>
+      </div>
+      <div id="errorMsg" style="color:red;"></div>
+    </section>
+
+    <hr style="margin:2rem 0;">
+
+    <!-- 2) 相性診断フォーム -->
+    <section id="compatSection" class="section">
+      <h2>相性診断</h2>
+      <p>2人分の生年月日を入力すると、藤原光輝が独自の宝石相性＆ライフパスから算出したスコアを表示します。</p>
+
+      <form id="compatForm" style="margin-top:1rem;">
+        <label>相手1の生年月日:
+          <input type="date" id="birthdate1" required>
+        </label>
+        <br><br>
+        <label>相手2の生年月日:
+          <input type="date" id="birthdate2" required>
+        </label>
+        <br><br>
+        <button type="submit" class="cta-button">診断</button>
+      </form>
+
+      <div id="compatResult" style="margin-top:1rem; background:#fafafa; padding:1rem;"></div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -39,12 +67,16 @@
     </div>
   </footer>
 
+  <!-- main.jsを読み込み -->
   <script src="assets/js/main.js"></script>
   <script>
+    // ページ読み込み完了時に有料コンテンツを取得
     document.addEventListener('DOMContentLoaded', () => {
-      fetchPremiumContent();
+      fetchPremiumContent(); 
+      // 相性診断フォーム(compatForm)は main.js が自動的に検知し、submitリスナーをセット
     });
 
+    // こちらは既存の fetchPremiumContent() コードを利用
     async function fetchPremiumContent() {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -54,7 +86,8 @@
       }
 
       try {
-        const url = "https://your-backend.onrender.com/api/premium-content";
+        // ★コピペでダメな箇所: あなたの本番バックエンドURLに書き換える
+        const url = "https://oracle-ja2k.onrender.com/api/premium-content";
         const res = await fetch(url, {
           headers: {
             'Authorization': 'Bearer ' + token

@@ -1,29 +1,27 @@
 /*******************************************
- * index.js (Webhook導入 + 有料コンテンツAPI)
+ * index.js (Webhook導入 + 有料コンテンツAPI + 相性診断API)
  *   - Stripe Checkout & Webhook済み
- *   - 追加: /api/premium-content で有料向けの情報を返す
+ *   - gemCompatibilityScoreを「藤原光輝」流に魅力的な数値へ
  *******************************************/
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
-// ★ Stripe の導入
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// ★ Webhook 署名シークレット
+// Webhook 署名シークレット
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 const app = express();
 app.use(cors());
 
-// 注意: /webhook/stripe だけは rawボディで受け取る
+// /webhook/stripe だけは rawボディ
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
-// 他のルートは通常JSONをOK
+// 他ルートは普通のJSONでOK
 app.use(express.json());
 
-// ★ DB接続 - SSL対応
+// DB接続 - SSL (Render等)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { require: true, rejectUnauthorized: false }
@@ -45,20 +43,20 @@ function authenticateToken(req, res, next) {
     if (err) {
       return res.status(403).json({ error: 'Invalid token' });
     }
-    req.user = decoded;
+    req.user = decoded; // user_id, email, ...
     next();
   });
 }
 
 /*******************************************
- * 動作確認 (GET /)
+ * 動作確認
  *******************************************/
 app.get('/', (req, res) => {
-  res.send('Hello from Node.js + DB + Stripe + Webhook + PremiumContent!');
+  res.send('Hello from Node.js + DB + Stripe + Webhook + PremiumContent + Compatibility!');
 });
 
 /*******************************************
- * ユーザー関連API
+ * ユーザー関連API (register, login)
  *******************************************/
 app.get('/api/users', async (req, res) => {
   try {
@@ -97,12 +95,11 @@ app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const userResult = await pool.query(
-      `SELECT user_id, email, password_hash
-         FROM users
-        WHERE email = $1`,
-      [email]
-    );
+    const userResult = await pool.query(`
+      SELECT user_id, email, password_hash
+        FROM users
+       WHERE email = $1
+    `, [email]);
 
     if (userResult.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -132,19 +129,18 @@ app.post('/api/login', async (req, res) => {
 });
 
 /*******************************************
- * サブスク関連API
+ * サブスク (subscribe)
  *******************************************/
 app.post('/api/subscribe', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.user_id;
     const { plan, price } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO subscriptions (user_id, plan, price, status)
-       VALUES ($1, $2, $3, 'active')
-       RETURNING subscription_id`,
-      [userId, plan, price]
-    );
+    const result = await pool.query(`
+      INSERT INTO subscriptions (user_id, plan, price, status)
+      VALUES ($1, $2, $3, 'active')
+      RETURNING subscription_id
+    `, [userId, plan, price]);
 
     res.json({
       subscription_id: result.rows[0].subscription_id,
@@ -157,7 +153,7 @@ app.post('/api/subscribe', authenticateToken, async (req, res) => {
 });
 
 /*******************************************
- * 宝石タイプAPI
+ * 宝石タイプAPI (例: gems, etc.)
  *******************************************/
 app.get('/api/gems', async (req, res) => {
   try {
@@ -172,10 +168,10 @@ app.get('/api/gems', async (req, res) => {
 app.get('/api/gems/:id', async (req, res) => {
   try {
     const gemTypeId = req.params.id;
-    const result = await pool.query(
-      `SELECT * FROM gem_types WHERE gem_type_id = $1`,
-      [gemTypeId]
-    );
+    const result = await pool.query(`
+      SELECT * FROM gem_types WHERE gem_type_id = $1
+    `, [gemTypeId]);
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Gem type not found' });
     }
@@ -187,7 +183,7 @@ app.get('/api/gems/:id', async (req, res) => {
 });
 
 /*******************************************
- * サブスク状態チェック (年運・月運など有料APIで利用)
+ * サブスク状態チェック用
  *******************************************/
 async function checkSubscription(req, res, next) {
   try {
@@ -207,7 +203,7 @@ async function checkSubscription(req, res, next) {
 }
 
 /*******************************************
- * 年運API (既存)
+ * 年運API (例)
  *******************************************/
 app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, async (req, res) => {
   try {
@@ -236,7 +232,7 @@ app.get('/api/annual/:year/:gemTypeId', authenticateToken, checkSubscription, as
 });
 
 /*******************************************
- * 月運API (既存)
+ * 月運API (例)
  *******************************************/
 app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscription, async (req, res) => {
   try {
@@ -266,7 +262,7 @@ app.get('/api/monthly/:year/:month/:gemTypeId', authenticateToken, checkSubscrip
 });
 
 /*******************************************
- * モザイク処理
+ * モザイク処理 (有料非サブスク→伏字)
  *******************************************/
 function maskContent(originalText) {
   const cutoff = Math.floor(originalText.length / 2);
@@ -274,28 +270,28 @@ function maskContent(originalText) {
 }
 
 /*******************************************
- * Stripe 決済 (create-checkout-session)
+ * Stripe Checkout (create-checkout-session)
  *******************************************/
 app.post('/api/payment/create-checkout-session', authenticateToken, async (req, res) => {
   try {
     const { planType } = req.body;
     const userId = req.user.user_id;
 
+    // ここを実際のPriceIDに書き換え
     let priceId = '';
     if (planType === 'monthly') {
-      // ここにあなたの "price_..." を
-      priceId = 'price_1Qqbz0RYC6bzdq0lNtKREtAs';
+      priceId = 'price_1Qqbz0RYC6bzdq0lNtKREtAs'; 
     } else if (planType === 'annual') {
-      priceId = 'price_1QrIefRYC6bzdq0lnx18O08B';
+      priceId = 'price_1QrIefRYC6bzdq0lnx18O08B'; 
     } else {
       return res.status(400).json({ error: 'Invalid planType' });
     }
 
-    // CheckoutSession作成
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
+      // ここをNetlifyの正しいURLに書き換え
       success_url: 'https://stirring-sunflower-f2ca8e.netlify.app/payment-success?session_id={CHECKOUT_SESSION_ID}',
       cancel_url: 'https://stirring-sunflower-f2ca8e.netlify.app/payment-cancel',
       metadata: { userId: String(userId) }
@@ -309,7 +305,7 @@ app.post('/api/payment/create-checkout-session', authenticateToken, async (req, 
 });
 
 /*******************************************
- * Stripe Webhook ルート (/webhook/stripe)
+ * Stripe Webhook (/webhook/stripe)
  *******************************************/
 app.post('/webhook/stripe', async (req, res) => {
   const sig = req.headers['stripe-signature'];
@@ -337,13 +333,12 @@ app.post('/webhook/stripe', async (req, res) => {
         console.log(`Payment success for userId=${userId}, setting sub active...`);
 
         try {
-          await pool.query(
-            `UPDATE subscriptions 
+          await pool.query(`
+            UPDATE subscriptions 
                SET status='active'
              WHERE user_id=$1 
-               AND status<>'active'`,
-            [userId]
-          );
+               AND status<>'active'
+          `, [userId]);
         } catch (dbErr) {
           console.error('Failed to update subscription:', dbErr);
         }
@@ -359,14 +354,12 @@ app.post('/webhook/stripe', async (req, res) => {
 });
 
 /*******************************************
- * ★ 新規: 有料向けコンテンツAPI
+ * 有料向けコンテンツAPI (/api/premium-content)
  *******************************************/
 app.get('/api/premium-content', authenticateToken, async (req, res) => {
   try {
-    // 1) JWTから user_id を取得
     const userId = req.user.user_id;
 
-    // 2) activeサブスクかチェック
     const subRes = await pool.query(`
       SELECT * FROM subscriptions
        WHERE user_id = $1
@@ -375,17 +368,14 @@ app.get('/api/premium-content', authenticateToken, async (req, res) => {
     `, [userId]);
 
     if (subRes.rows.length === 0) {
-      // サブスクが無い/無効
       return res.status(403).json({ error: 'No active subscription' });
     }
 
-    // 3) 有料専用のデータを返す(例)
-    // 実際はDBから読み込んでもOK
+    // サンプル有料コンテンツ
     const premiumData = {
       title: "有料専用のプレミアム占い",
       detail: "ここに高度な占い結果や深いコラムを配置可能。"
     };
-
     res.json(premiumData);
 
   } catch (err) {
@@ -393,6 +383,166 @@ app.get('/api/premium-content', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+/*******************************************
+ * 相性診断API (/api/compatibility)
+ *******************************************/
+app.post('/api/compatibility', authenticateToken, async (req, res) => {
+  try {
+    // サブスクチェック
+    const userId = req.user.user_id;
+    const subCheck = await pool.query(`
+      SELECT * FROM subscriptions
+       WHERE user_id=$1
+         AND status='active'
+       LIMIT 1
+    `, [userId]);
+    if (subCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'No active subscription' });
+    }
+
+    // リクエストパラメータ
+    const { birthdate1, birthdate2 } = req.body;
+    if (!birthdate1 || !birthdate2) {
+      return res.status(400).json({ error: 'Missing birthdates' });
+    }
+
+    // personX: { gemTypeId, gemTypeStr, lifePath }
+    const person1 = calcPerson(birthdate1);
+    const person2 = calcPerson(birthdate2);
+
+    const baseScore = getGemCompatibilityScore(person1.gemTypeId, person2.gemTypeId);
+    const lpBonus  = getLifePathBonus(person1.lifePath, person2.lifePath);
+
+    let total = baseScore + lpBonus;
+    if (total>100) total=100;
+    if (total<0) total=0;
+
+    const stars   = getStars(total);
+    const comment = getComment(total);
+
+    res.json({
+      score: total,
+      stars,
+      comment,
+      person1,
+      person2
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/*******************************************
+ * 相性診断の内部関数
+ *******************************************/
+// birthdateStr => { gemTypeId, gemTypeStr, lifePath }
+function calcPerson(birthdateStr) {
+  const { gemType, lifePath } = calcBirthDataNode(birthdateStr);
+  const gemTypeId = getGemTypeId(gemType);
+  return { gemTypeId, gemTypeStr: gemType, lifePath };
+}
+
+// 生年月日から宝石タイプ/ライフパス
+function calcBirthDataNode(birthDateStr) {
+  const [year, month, day] = birthDateStr.split('-');
+  const digits = [...year, ...month, ...day].map(Number).filter(n => !isNaN(n));
+  const sum = digits.reduce((a,b)=>a+b, 0);
+
+  let gemNum = reduceToSingle(sum);
+  if (gemNum>7) gemNum -= 7;
+  const gemType = getGemTypeStr(gemNum);
+
+  const lifePath = reduceToSingle(sum);
+  return { gemType, lifePath };
+}
+
+function reduceToSingle(num) {
+  let result = num;
+  while (result>9) {
+    const arr = String(result).split('').map(Number);
+    result = arr.reduce((a,b)=>a+b,0);
+  }
+  return result;
+}
+
+function getGemTypeStr(num) {
+  switch(num) {
+    case 1: return 'ダイヤモンド（火）';
+    case 2: return 'ルビー（火）';
+    case 3: return 'サファイア（水）';
+    case 4: return 'エメラルド（風）';
+    case 5: return 'アメジスト（土）';
+    case 6: return 'トパーズ（風）';
+    case 7: return 'オパール（土）';
+    default: return '不明';
+  }
+}
+
+// 七宝占術 gemTypeId
+function getGemTypeId(gemTypeStr) {
+  if (!gemTypeStr) return 0;
+  if (gemTypeStr.includes('ダイヤモンド')) return 1;
+  if (gemTypeStr.includes('ルビー'))       return 2;
+  if (gemTypeStr.includes('サファイア'))   return 3;
+  if (gemTypeStr.includes('エメラルド'))   return 4;
+  if (gemTypeStr.includes('アメジスト'))   return 5;
+  if (gemTypeStr.includes('トパーズ'))     return 6;
+  if (gemTypeStr.includes('オパール'))     return 7;
+  return 0;
+}
+
+/*******************************************
+ * ★ 藤原光輝オリジナル: gemCompatibilityScore表
+ *******************************************/
+// gemTypeId: 1~7
+function getGemCompatibilityScore(id1, id2) {
+  // ダイヤ(1)=火, ルビー(2)=火, サファイア(3)=水, エメラルド(4)=風,
+  // アメジスト(5)=土, トパーズ(6)=風, オパール(7)=土
+
+  // "人々が夢中になる"ようバランス調整。火×火は高め、火×水は低めなど
+  const table = {
+    1: {1:88,2:92,3:45,4:75,5:65,6:78,7:60}, // ダイヤ × 各
+    2: {1:92,2:85,3:50,4:70,5:60,6:72,7:58}, // ルビー
+    3: {1:45,2:50,3:82,4:67,5:72,6:65,7:74}, // サファイア
+    4: {1:75,2:70,3:67,4:85,5:58,6:80,7:62}, // エメラルド
+    5: {1:65,2:60,3:72,4:58,5:80,6:60,7:78}, // アメジスト
+    6: {1:78,2:72,3:65,4:80,5:60,6:86,7:64}, // トパーズ
+    7: {1:60,2:58,3:74,4:62,5:78,6:64,7:83}  // オパール
+  };
+
+  if (!table[id1] || table[id1][id2]==null) {
+    return 50; // default
+  }
+  return table[id1][id2];
+}
+
+// ライフパス差→ボーナス
+function getLifePathBonus(lp1, lp2) {
+  const diff = Math.abs(lp1-lp2);
+  if (diff===0) return 20;
+  if (diff<=2) return 10;
+  return 0;
+}
+
+// スコア→★1～5
+function getStars(score) {
+  if (score<=20) return '★1';
+  if (score<=40) return '★2';
+  if (score<=60) return '★3';
+  if (score<=80) return '★4';
+  return '★5';
+}
+
+// スコア→コメント
+function getComment(score) {
+  if (score<=20) return '相性が厳しいかも...慎重に距離感を保ちましょう。';
+  if (score<=40) return 'まぁまぁ。工夫次第でうまくいきそう。';
+  if (score<=60) return '普通の相性。お互い尊重すれば十分可能性あり。';
+  if (score<=80) return '良い感じ！協力し合えば素敵な関係になれます。';
+  return '最高の相性！二人の相乗効果が大きく期待できます。';
+}
 
 /*******************************************
  * サーバー起動
