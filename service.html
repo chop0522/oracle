@@ -19,6 +19,8 @@
           <li><a href="about.html">七宝占術とは</a></li>
           <li><a href="service.html" class="active">有料サービス</a></li>
           <li><a href="contact.html">お問い合わせ</a></li>
+          <li><button onclick="logout()" style="margin-left:1rem;">ログアウト</button></li>
+          <li><a href="premium.html" style="margin-left:1rem;">有料コンテンツ</a></li>
         </ul>
       </nav>
     </div>
@@ -28,43 +30,26 @@
     <div class="container">
       <h1>有料サービス</h1>
       <p>七宝占術を使ったより詳細な鑑定をご提供します。<br>
-         ログインし、サブスク登録をすることで<br>
-         より深い占い結果（年運・月運・相性診断等）が閲覧可能になります。</p>
+         ログイン & サブスク登録をすることで<br>
+         月運・年運・相性診断などの深い占い結果が閲覧可能になります。</p>
     </div>
   </section>
 
   <section class="section service-list">
     <div class="container">
-
-      <!-- 年間運勢レポート -->
       <article class="service-item">
         <h2>年間運勢レポート</h2>
-        <p>1年間の運勢を宝石タイプと運命周期を掛け合わせて解析し、成功やチャンスをつかむためのアドバイスをお届けします。</p>
+        <p>1年間の運勢を宝石タイプと運命周期を掛け合わせて解析します。</p>
         <p class="price">5,000円（税抜）</p>
-        <!-- 「申し込む」ボタン（ログイン状態で切り替え）-->
-        <button class="cta-button" id="annualReportBtn">申し込む</button>
+        <!-- 申し込むボタン → openStripeCheckout('annual') などで連携可能 -->
+        <!-- あるいは単に: <button onclick="openStripeCheckout('annual')">年額プラン(Stripe)</button> -->
       </article>
 
-      <!-- 個別鑑定（オンライン） は削除 -->
-
-      <!-- 特別鑑定プラン -->
       <article class="service-item">
         <h2>特別鑑定プラン</h2>
-        <p>宝石タイプ・運命周期・数秘術（ライフパス・ソウルナンバー）などを総合的に見て、詳細レポートを作成しオンラインでアドバイス。</p>
+        <p>宝石タイプ・運命周期・数秘術などを総合的に見て、詳細レポート。</p>
         <p class="price">10,000円（税抜）</p>
-        <button class="cta-button" id="specialPlanBtn">申し込む</button>
       </article>
-    </div>
-  </section>
-
-  <!-- ログイン状態を表示する領域 -->
-  <section class="section" id="userStatusSection">
-    <div class="container">
-      <p id="userStatusMsg"></p>
-      <!-- 未ログインなら表示するボタン -->
-      <button class="cta-button" id="goLoginBtn" style="display:none;">ログインページへ</button>
-      <!-- ログイン済みなら表示するボタン -->
-      <button class="cta-button" id="goSubscribeBtn" style="display:none;">サブスク登録ページへ</button>
     </div>
   </section>
 
@@ -74,7 +59,6 @@
     </div>
   </footer>
 
-  <!-- メインJS -->
   <script src="assets/js/main.js"></script>
 </body>
 </html>

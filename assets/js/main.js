@@ -1,14 +1,15 @@
 /***************************************************
  * assets/js/main.js
  * 
- * [最終版]
+ * [最終版] 
  * 1) DOMContentLoaded後にフォームイベントを設定
  * 2) fortuneForm（無料簡易診断）
- * 3) loginForm（ログイン → JWTトークン取得）
+ * 3) loginForm（ログイン → JWTトークン取得 → premium.htmlへリダイレクト）
  * 4) gem.html用: 宝石データを "assets/data/gemsData.json" から読み込み
  * 5) service.html用: UI切り替え (ログイン状態確認→ボタン出し分け)
  * 6) Stripe Checkout呼び出し (openStripeCheckout)
  * 7) ログアウト関数 (logout)
+ * 8) 相性診断フォーム (compatForm) → /api/compatibility にPOST (有料ユーザ向け)
  ***************************************************/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -56,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /*****************************************
    * 2) ログインフォーム (loginForm)
+   *    → 成功時に premium.html へ自動遷移
    *****************************************/
   const loginForm = document.getElementById('loginForm');
   const loginResultDiv = document.getElementById('loginResult');
@@ -87,6 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
           localStorage.setItem('email', email);
 
           loginResultDiv.textContent = 'ログイン成功！トークンを保存しました。';
+
+          // ▼ ログイン後、premium.htmlへ自動リダイレクト
+          window.location.href = 'premium.html';
+
         } else {
           loginResultDiv.textContent = 'ログイン失敗: ' + (data.error || '不明なエラー');
         }
@@ -98,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /*****************************************
-   * 3) gem.html 用 (宝石データ読み込み)
+   * 3) gem.html 用 (宝石データを読み込み)
    *****************************************/
   const gemContent = document.getElementById('gemContent'); 
   if (gemContent) {
@@ -135,9 +141,62 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /*****************************************
-   * 4) service.html 用のUI切り替え
+   * 4) service.html 用のUI切り替え (例)
    *****************************************/
   setupUserStatusUI();
+
+  /*****************************************
+   * 8) 相性診断フォーム (compatForm)
+   *    → /api/compatibility にPOST (有料向け想定)
+   *****************************************/
+  const compatForm = document.getElementById('compatForm');
+  const compatResultDiv = document.getElementById('compatResult');
+  if (compatForm && compatResultDiv) {
+    compatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      // 2人分の誕生日を取得
+      const birthdate1 = document.getElementById('birthdate1').value;
+      const birthdate2 = document.getElementById('birthdate2').value;
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        compatResultDiv.textContent = "未ログインです。相性診断は有料です。";
+        return;
+      }
+
+      try {
+        // 実際はあなたのバックエンドURLに書き換え
+        const url = 'https://oracle-ja2k.onrender.com/api/compatibility'; 
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ birthdate1, birthdate2 })
+        });
+        if (!res.ok) {
+          if (res.status === 403) {
+            compatResultDiv.textContent = "サブスクが有効ではありません。有料登録をお願いします。";
+          } else {
+            compatResultDiv.textContent = "エラー: " + res.status;
+          }
+          return;
+        }
+        const data = await res.json();
+        // data.score, data.comment, data.stars 等を表示
+        compatResultDiv.innerHTML = `
+          <p>相性スコア: ${data.score}</p>
+          <p>評価: ${data.stars} (5段階)</p>
+          <p>${data.comment}</p>
+        `;
+      } catch (err) {
+        console.error(err);
+        compatResultDiv.textContent = "通信エラーが発生しました。";
+      }
+    });
+  }
+
 });
 
 /***************************************************
@@ -165,11 +224,10 @@ async function fetchAllGemsData() {
 }
 
 /***************************************************
- * setupUserStatusUI: (service.html)
- * （ここでは特に何もしないが、ページによってUI切り替えしたいなら実装可能）
+ * setupUserStatusUI: (service.html などで使う)
  ***************************************************/
 function setupUserStatusUI() {
-  // 必要に応じてログイン状態確認し、UIを分ける処理などを記述
+  // 必要に応じてログイン状態でUI切り替えする処理を追記
 }
 
 /***************************************************
@@ -213,16 +271,12 @@ function logout() {
   // ローカルストレージのトークン/メールを削除し、未ログイン状態に戻す
   localStorage.removeItem('token');
   localStorage.removeItem('email');
-  // 必要に応じて別のページへ移動 or 画面再読み込み
-  // 例: 同じページをリロード
-  // location.reload();
-
-  // もしくはトップページへ
+  // トップページへ移動 or リロード
   window.location.href = 'index.html';
 }
 
 /***************************************************
- * 占い計算ロジック
+ * 占い計算ロジック (無料診断用)
  ***************************************************/
 function calcBirthData(birthDateStr) {
   const [year, month, day] = birthDateStr.split('-');
