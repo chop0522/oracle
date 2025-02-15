@@ -20,6 +20,7 @@
           <li><a href="about.html" class="active">七宝占術とは</a></li>
           <li><a href="service.html">有料サービス</a></li>
           <li><a href="contact.html">お問い合わせ</a></li>
+          <!-- ▼ 追加: ログアウトボタン & プレミアムリンク -->
           <li><button onclick="logout()" style="margin-left:1rem;">ログアウト</button></li>
           <li><a href="premium.html" style="margin-left:1rem;">有料コンテンツ</a></li>
         </ul>
@@ -27,6 +28,7 @@
     </div>
   </header>
 
+  <!-- メインコンテンツ -->
   <section class="section page-heading">
     <div class="container">
       <h1>七宝占術とは？</h1>
@@ -36,17 +38,90 @@
 
   <section class="section about-content">
     <div class="container">
+      <!-- 七宝占術の概要 -->
       <h2>七宝占術の概要</h2>
       <p>
-        ～（既存の説明文）～
+        七宝占術では、宝石タイプと運命周期の2つを軸にして、人生を捉えます。<br>
+        生年月日の数字を合計して最終的に1桁にしたうえで、7を超えるときは7を引く簡易計算法で宝石タイプを決定し、<br>
+        さらに9年または12年のサイクルで運気の流れを読み解くのが基本です。
       </p>
-      <!-- 以降、旧コードをそのまま or 必要に応じて補足 -->
+
+      <!-- 宝石タイプ一覧（アイコン画像を並べる） -->
+      <h2>宝石タイプ一覧</h2>
+      <p>下の宝石アイコンをクリックすると、それぞれの宝石タイプの詳細ページへ移動します。</p>
+      <div class="gem-grid">
+        <!-- ダイヤモンド -->
+        <a href="gem.html?id=1" class="gem-link">
+          <img src="assets/images/diamond_icon.png" alt="ダイヤモンド" />
+          <span></span>
+        </a>
+        <!-- ルビー -->
+        <a href="gem.html?id=2" class="gem-link">
+          <img src="assets/images/ruby_icon.png" alt="ルビー" />
+          <span></span>
+        </a>
+        <!-- サファイア -->
+        <a href="gem.html?id=3" class="gem-link">
+          <img src="assets/images/sapphire_icon.png" alt="サファイア" />
+          <span></span>
+        </a>
+        <!-- エメラルド -->
+        <a href="gem.html?id=4" class="gem-link">
+          <img src="assets/images/emerald_icon.png" alt="エメラルド" />
+          <span></span>
+        </a>
+        <!-- アメジスト -->
+        <a href="gem.html?id=5" class="gem-link">
+          <img src="assets/images/amethyst_icon.png" alt="アメジスト" />
+          <span></span>
+        </a>
+        <!-- トパーズ -->
+        <a href="gem.html?id=6" class="gem-link">
+          <img src="assets/images/topaz_icon.png" alt="トパーズ" />
+          <span></span>
+        </a>
+        <!-- オパール -->
+        <a href="gem.html?id=7" class="gem-link">
+          <img src="assets/images/opal_icon.png" alt="オパール" />
+          <span></span>
+        </a>
+      </div>
+
+      <!-- 運命周期の紹介 -->
+      <h2>運命周期（9年＆12年サイクル）</h2>
+      <p>
+        七宝占術では、宝石タイプに加えて運命が巡るリズムを意識します。<br>
+        9年もしくは12年のサイクルで、各年が「発芽」「成長」「開花」などの役割を担うと考えられています。
+      </p>
+
+      <h3>9年周期の例</h3>
+      <ol>
+        <li><strong>発芽</strong>：新しい始まり、種を蒔く</li>
+        <li><strong>成長</strong>：力をつけ、方向性を明確化</li>
+        <li><strong>開花</strong>：行動がピークに達しやすい</li>
+        <li><strong>調整</strong>：一度立ち止まって軌道修正</li>
+        <li><strong>挑戦</strong>：拡張・冒険心が芽生える</li>
+        <li><strong>成熟</strong>：地道な努力を積んで結果に近づく</li>
+        <li><strong>収穫</strong>：大きな成果を得る</li>
+        <li><strong>変化</strong>：次のステージを見据える時</li>
+        <li><strong>完了</strong>：一区切りをつけ、新たな9年へ</li>
+      </ol>
+
+      <h3>12年周期の例</h3>
+      <p>
+        干支に基づいた12年サイクルを採用する流派もあります。<br>
+        一周を12年として、各年に「上昇」「停滞」「安定」といったテーマを割り当てる考え方です。
+      </p>
+
+      <p>
+        「自分が今どの年にいるか」を把握することで、行動の優先度を決めたり、タイミングを調整したりできるのが七宝占術の魅力です。
+      </p>
     </div>
   </section>
 
   <footer class="site-footer">
     <div class="footer-inner">
-      <p>&copy; 2025 七宝占術. All Rights Reserved.</p>
+      <p>&copy; 2024 七宝占術. All Rights Reserved.</p>
     </div>
   </footer>
 
