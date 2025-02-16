@@ -18,7 +18,7 @@
           <li><a href="about.html">七宝占術とは</a></li>
           <li><a href="service.html">有料サービス</a></li>
           <li><a href="contact.html">お問い合わせ</a></li>
-          <li><button onclick="logout()">ログアウト</button></li>
+          <li><button onclick="logout()" style="margin-left:1rem;">ログアウト</button></li>
           <!-- もし他のページ同様、premium.htmlのリンクをナビに追加したいなら:
                <li><a href="premium.html" class="active">有料コンテンツ</a></li> -->
         </ul>
@@ -59,6 +59,47 @@
 
       <div id="compatResult" style="margin-top:1rem; background:#fafafa; padding:1rem;"></div>
     </section>
+
+    <hr style="margin:2rem 0;">
+
+    <!-- 3) 年運ビジュアル -->
+    <section id="annualFortuneSection" class="section">
+      <h2>年運ビジュアル</h2>
+      <p>年と宝石タイプを指定して年運を表示します。</p>
+
+      <form id="annualForm" style="margin-top:1rem;">
+        <label>年:
+          <input type="number" id="annualYear" value="2025" required>
+        </label>
+        <label style="margin-left:1rem;">宝石タイプID(1~7):
+          <input type="number" id="annualGemTypeId" value="1" required>
+        </label>
+        <button type="submit" class="cta-button" style="margin-left:1rem;">年運を表示</button>
+      </form>
+
+      <div id="annualResult" style="margin-top:1rem; background:#fafafa; padding:1rem;"></div>
+    </section>
+
+    <hr style="margin:2rem 0;">
+
+    <!-- 4) 月運ビジュアル -->
+    <section id="monthlyFortuneSection" class="section">
+      <h2>月運ビジュアル</h2>
+      <p>年と宝石タイプを指定して、各月の運勢を一覧表示します。</p>
+
+      <form id="monthlyForm" style="margin-top:1rem;">
+        <label>年:
+          <input type="number" id="monthlyYear" value="2025" required>
+        </label>
+        <label style="margin-left:1rem;">宝石タイプID(1~7):
+          <input type="number" id="monthlyGemTypeId" value="1" required>
+        </label>
+        <button type="submit" class="cta-button" style="margin-left:1rem;">月運を表示</button>
+      </form>
+
+      <div id="monthlyResult" style="margin-top:1rem; background:#fafafa; padding:1rem;"></div>
+    </section>
+
   </main>
 
   <footer class="site-footer">
@@ -70,13 +111,15 @@
   <!-- main.jsを読み込み -->
   <script src="assets/js/main.js"></script>
   <script>
-    // ページ読み込み完了時に有料コンテンツを取得
+    // ページ読み込み完了時に有料コンテンツを取得＆フォームの初期化
     document.addEventListener('DOMContentLoaded', () => {
-      fetchPremiumContent(); 
-      // 相性診断フォーム(compatForm)は main.js が自動的に検知し、submitリスナーをセット
+      fetchPremiumContent();   // 既存: /api/premium-content を呼ぶ
+      initAnnualForm();        // 年運フォーム
+      initMonthlyForm();       // 月運フォーム
+      // 相性診断フォーム(compatForm)は main.js が自動で検知しsubmitリスナーをセット
     });
 
-    // こちらは既存の fetchPremiumContent() コードを利用
+    // (1) fetchPremiumContent は既存のものをそのまま
     async function fetchPremiumContent() {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -104,7 +147,6 @@
           return;
         }
         const data = await res.json();
-        // data.title, data.detail などを表示
         document.getElementById('premiumContent').innerHTML = `
           <h2>${data.title}</h2>
           <p>${data.detail}</p>
@@ -114,6 +156,85 @@
         document.getElementById('errorMsg').textContent = 
           "通信エラーが発生しました。";
       }
+    }
+
+    // (2) 年運フォーム init
+    function initAnnualForm() {
+      const annualForm = document.getElementById('annualForm');
+      const annualResultDiv = document.getElementById('annualResult');
+      if (!annualForm || !annualResultDiv) return;
+
+      annualForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const year = document.getElementById('annualYear').value;
+        const gemTypeId = document.getElementById('annualGemTypeId').value;
+        annualResultDiv.textContent = "読み込み中...";
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          annualResultDiv.textContent = "未ログインです。";
+          return;
+        }
+        try {
+          // GET /api/annual/:year/:gemTypeId
+          // ★ あなたの本番URLに書き換え
+          const url = `https://oracle-ja2k.onrender.com/api/annual/${year}/${gemTypeId}`;
+          const res = await fetch(url, {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (!res.ok) {
+            annualResultDiv.textContent = "エラー: " + res.status;
+            return;
+          }
+          const data = await res.json(); // { content }
+          annualResultDiv.innerHTML = `<h3>${year}年の年運</h3><p>${data.content}</p>`;
+        } catch (err) {
+          console.error(err);
+          annualResultDiv.textContent = "通信エラー";
+        }
+      });
+    }
+
+    // (3) 月運フォーム init
+    function initMonthlyForm() {
+      const monthlyForm = document.getElementById('monthlyForm');
+      const monthlyResultDiv = document.getElementById('monthlyResult');
+      if (!monthlyForm || !monthlyResultDiv) return;
+
+      monthlyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const year = document.getElementById('monthlyYear').value;
+        const gemTypeId = document.getElementById('monthlyGemTypeId').value;
+        monthlyResultDiv.textContent = "読み込み中...";
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          monthlyResultDiv.textContent = "未ログインです。";
+          return;
+        }
+        // 12か月分ループして取得→テーブル表示
+        try {
+          let html = `<h3>${year}年の月運</h3>`;
+          html += `<table border="1" cellpadding="8" style="border-collapse:collapse;"><tr><th>月</th><th>運勢</th></tr>`;
+          for (let month = 1; month <= 12; month++) {
+            const url = `https://oracle-ja2k.onrender.com/api/monthly/${year}/${month}/${gemTypeId}`;
+            const res = await fetch(url, {
+              headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+              const data = await res.json(); // { content }
+              html += `<tr><td>${month}月</td><td>${data.content}</td></tr>`;
+            } else {
+              html += `<tr><td>${month}月</td><td style="color:red;">エラー:${res.status}</td></tr>`;
+            }
+          }
+          html += `</table>`;
+          monthlyResultDiv.innerHTML = html;
+        } catch (err) {
+          console.error(err);
+          monthlyResultDiv.textContent = "通信エラーが発生しました。";
+        }
+      });
     }
   </script>
 </body>
