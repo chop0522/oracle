@@ -1,3 +1,15 @@
+/* 
+   style.css (PixelMplus版)
+   1) PixelMplus のインポート
+   2) レトロドット背景・ボタン等
+   3) レスポンシブ対応(メディアクエリ)
+   4) 日本語もピクセル風になる想定
+*/
+
+/* 1) PixelMplus のインポート */
+/* 例: PixelMplus10, PixelMplus12など好みで指定 */
+@import url('https://fonts.googleapis.com/css2?family=PixelMplus12&display=swap');
+
 /* ===============================
    BASE / RESET
 =============================== */
@@ -7,27 +19,27 @@
   box-sizing: border-box;
 }
 
-/* ドットフォントの全体適用（Press Start 2P） */
+/* ドットフォントの全体適用（PixelMplus） */
 body {
   background-color: #000; /* 黒をベース */
   color: #fff; 
   line-height: 1.4;
-  font-size: 14px; /* ドットフォントなので小さめでも十分 */
+  font-size: 14px; /* ピクセルフォントなのでやや小さめ */
+  font-family: 'PixelMplus12', sans-serif; /* 日本語もドット風に */
 }
 
 /* ===============================
-   DOT BACKGROUND
+   DOT BACKGROUND (例)
 =============================== */
 .dot-bg {
-  /* 小さなドット画像を繰り返し or base64 etc. */
-  /* 例: url("assets/images/dot-background.png") repeat */
+  /* 小さなドット画像を繰り返し設定する場合 */
   background: url("assets/images/dot-bg.png") repeat;
   background-color: #000;
 }
 
-/* レトロゲーム感を高めるならフォントを全体に適用 */
+/* レトロゲーム感を高めたい箇所は .pixel-font クラスを用意してもいい */
 .pixel-font {
-  font-family: 'Press Start 2P', cursive;
+  font-family: 'PixelMplus12', sans-serif;
 }
 
 /* ===============================
@@ -54,6 +66,7 @@ body {
   width: 48px; 
   height: 48px;
   margin-right: 8px;
+  image-rendering: pixelated; /* ドット感 */
 }
 .site-title {
   font-size: 16px;
@@ -75,7 +88,7 @@ body {
 }
 
 /* ===============================
-   MAIN VISUAL
+   MAIN VISUAL (例)
 =============================== */
 .main-visual {
   position: relative;
@@ -146,7 +159,6 @@ body {
   background-color: #111;
   margin-top: 16px;
   border: 2px solid #444;
-  border-radius: 0; /* レトロ感で丸角なし */
 }
 .diagnosis-section form {
   display: flex;
@@ -162,7 +174,7 @@ body {
   border: 2px solid #fff;
   background: #000;
   color: #fff;
-  font-family: 'Press Start 2P', cursive;
+  font-family: 'PixelMplus12', sans-serif; /* 日本語入力にも対応 */
   font-size: 12px;
 }
 .diagnosis-result {
@@ -170,7 +182,7 @@ body {
   font-size: 12px;
 }
 
-/* 伏字 or blur for partially locked content */
+/* 伏字 or blur for partially locked content (例) */
 .locked-content {
   filter: blur(4px);
   position: relative;
@@ -220,4 +232,24 @@ body {
   margin: 0 auto;
   font-size: 10px;
   color: #999;
+}
+
+/* ===============================
+   RESPONSIVE (例)
+=============================== */
+@media (max-width: 600px) {
+  body {
+    font-size: 12px; /* スマホで少し小さめ */
+  }
+  .header-inner {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .main-nav ul {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .container {
+    padding: 8px;
+  }
 }
