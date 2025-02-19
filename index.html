@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <title>七宝占術 公式サイト | トップ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- 共通CSSを読み込み -->
+  <!-- 新しい PixelMplus版 CSS -->
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
-<body>
+<body class="dot-bg pixel-font">
   <!-- ヘッダー -->
   <header class="site-header">
     <div class="header-inner">
@@ -25,7 +25,7 @@
           <li><a href="contact.html">お問い合わせ</a></li>
           <!-- ▼ ここでログアウトボタン -->
           <li><button onclick="logout()" style="margin-left:1rem;">ログアウト</button></li>
-          <!-- ▼ 追加: 有料ページへのリンク -->
+          <!-- ▼ 有料ページへのリンク -->
           <li><a href="premium.html" style="margin-left:1rem;">有料コンテンツ</a></li>
         </ul>
       </nav>
@@ -62,7 +62,7 @@
         <label for="userName">お名前（ローマ字）:</label>
         <input type="text" id="userName" name="userName" required placeholder="TANAKA YUYA" />
 
-        <button type="submit">診断する</button>
+        <button type="submit" class="cta-button">診断する</button>
       </form>
       <div id="diagnosisResult" class="diagnosis-result"></div>
     </div>
@@ -87,20 +87,20 @@
       <form id="loginForm">
         <div class="form-group">
           <label for="loginEmail">メールアドレス:</label>
-          <input type="email" id="loginEmail" name="loginEmail" required placeholder="test@example.com">
+          <input type="email" id="loginEmail" name="loginEmail" required placeholder="test@example.com" />
         </div>
         <div class="form-group">
           <label for="loginPassword">パスワード:</label>
-          <input type="password" id="loginPassword" name="loginPassword" required>
+          <input type="password" id="loginPassword" name="loginPassword" required />
         </div>
-        <button type="submit">ログイン</button>
+        <button type="submit" class="cta-button">ログイン</button>
       </form>
       <!-- 成功/エラー表示用 -->
       <div id="loginResult"></div>
     </div>
   </section>
 
-  <!-- ▼ Stripe Checkout用ボタン (旧サブスクフォームは削除済み) -->
+  <!-- Stripeサブスクチェックアウト用 -->
   <section class="section" id="stripe-checkout-section">
     <div class="container">
       <h2>Stripeサブスク（自動決済）</h2>
@@ -115,7 +115,6 @@
       </p>
     </div>
   </section>
-  <!-- ▲ ここまで Stripe Checkout セクション -->
 
   <!-- フッター -->
   <footer class="site-footer">
